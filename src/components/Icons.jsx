@@ -1,0 +1,20 @@
+export const Ico = {
+  finanzen: (p) => (<svg viewBox="0 0 24 24" fill="none" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M4 19V5" /><path d="M4 19h16" /><path d="M8 15.5V12" /><path d="M12.5 15.5V8.5" /><path d="M17 15.5v-5" /></svg>),
+  mieter: (p) => (<svg viewBox="0 0 24 24" fill="none" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="9" cy="8.5" r="3" /><path d="M3.5 19c.6-3 2.9-4.6 5.5-4.6S13.9 16 14.5 19" /><path d="M16 6.2a3 3 0 0 1 0 5.6" /><path d="M17.4 14.7c1.8.6 3 2.1 3.4 4.3" /></svg>),
+  technik: (p) => (<svg viewBox="0 0 24 24" fill="none" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M14.5 4.2a4.2 4.2 0 0 0-5.3 5.3L4 14.7 6.3 17l5.2-5.2a4.2 4.2 0 0 0 5.3-5.3l-2.4 2.4-1.8-.4-.4-1.8z" /><path d="M14.8 14.3 19 18.5" /></svg>),
+  home: (p) => (<svg viewBox="0 0 24 24" fill="none" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M4 10.5 12 4l8 6.5" /><path d="M6 9.6V19h12V9.6" /><path d="M10 19v-4.5h4V19" /></svg>),
+  support: (p) => (<svg viewBox="0 0 24 24" fill="none" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="3.2" /><path d="m9.7 9.7-3-3M14.3 9.7l3-3M9.7 14.3l-3 3M14.3 14.3l3 3" /></svg>),
+  gear: (p) => (<svg viewBox="0 0 24 24" fill="none" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="12" cy="12" r="3" /><path d="M12 3.5v2M12 18.5v2M3.5 12h2M18.5 12h2M6 6l1.4 1.4M16.6 16.6 18 18M18 6l-1.4 1.4M7.4 16.6 6 18" /></svg>),
+  search: (p) => (<svg viewBox="0 0 24 24" fill="none" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="11" cy="11" r="6.2" /><path d="m15.6 15.6 3.4 3.4" /></svg>),
+  back: (p) => (<svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M14.5 5 8 12l6.5 7" /></svg>),
+  chevron: (p) => (<svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="m9.5 5 7 7-7 7" /></svg>),
+  plus: (p) => (<svg viewBox="0 0 24 24" fill="none" strokeWidth="1.9" strokeLinecap="round" {...p}><path d="M12 5.5v13M5.5 12h13" /></svg>),
+  doc: (p) => (<svg viewBox="0 0 24 24" fill="none" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M13.5 3.5H7a1.5 1.5 0 0 0-1.5 1.5v14A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5V8.5z" /><path d="M13.5 3.5v5h5" /></svg>),
+  close: (p) => (<svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" strokeLinecap="round" {...p}><path d="m6.5 6.5 11 11M17.5 6.5l-11 11" /></svg>),
+  sliders: (p) => (<svg viewBox="0 0 24 24" fill="none" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M5 7h9M18 7h1M5 12h3M12 12h7M5 17h9M18 17h1" /><circle cx="16" cy="7" r="2" /><circle cx="10" cy="12" r="2" /><circle cx="16" cy="17" r="2" /></svg>),
+  up: (p) => (<svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M12 18V6M6.5 11.5 12 6l5.5 5.5" /></svg>),
+  down: (p) => (<svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M12 6v12M6.5 12.5 12 18l5.5-5.5" /></svg>),
+  folder: (p) => (<svg viewBox="0 0 24 24" fill="none" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M3.5 6.5A1.5 1.5 0 0 1 5 5h4l2 2.5h8a1.5 1.5 0 0 1 1.5 1.5v8.5A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5z" /></svg>),
+  bell: (p) => (<svg viewBox="0 0 24 24" fill="none" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M18 16V11a6 6 0 1 0-12 0v5l-1.5 2.5h15z" /><path d="M10 20.5h4" /></svg>),
+};
+export const SECTION_ICON = { finanzen: Ico.finanzen, mieter: Ico.mieter, technik: Ico.technik };
