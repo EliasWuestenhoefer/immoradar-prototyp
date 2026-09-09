@@ -40,9 +40,16 @@ src/
 
 ## Deployment auf GitHub Pages
 
-1. Dieses Projekt auf GitHub pushen (siehe Chat-Anleitung).
-2. In `vite.config.js` prüfen, dass `base: "/<dein-repo-name>/"` zum tatsächlichen Repo-Namen passt.
-3. Einmalig: `npm install` (installiert dabei auch `gh-pages`).
-4. Danach bei jeder Veröffentlichung einfach: `npm run deploy`
-   Das baut das Projekt und veröffentlicht den `dist`-Ordner auf dem `gh-pages`-Branch.
-5. In den Repo-Settings → Pages → Source: Branch `gh-pages`, Ordner `/ (root)` auswählen.
+Jeder Push auf `main` veröffentlicht die Seite automatisch (siehe
+`.github/workflows/deploy.yml`): GitHub Actions baut das Projekt und
+pusht den `dist`-Ordner auf den `gh-pages`-Branch. Kein manueller
+Schritt mehr nötig.
+
+Live-Seite: https://eliaswuestenhoefer.github.io/immoradar-prototyp/
+
+Einmalige Voraussetzung in den Repo-Settings → Pages → Source: Branch
+`gh-pages`, Ordner `/ (root)`.
+
+Manuell auslösen geht weiterhin über `npm run deploy` (baut und
+veröffentlicht lokal) oder über den "Run workflow"-Button im
+Actions-Tab.
