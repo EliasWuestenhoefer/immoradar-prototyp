@@ -1,6 +1,5 @@
 import { useState } from "react";
-
-export const DEMO_ACCOUNT = { email: "alex@immoradar.app", password: "demo1234" };
+import { supabase } from "../utils/supabaseClient.js";
 
 function RadarMark() {
   return (
@@ -115,31 +114,43 @@ function BrandPanel({ tag, title, body }) {
   );
 }
 
-export function LoginScreen({ onLogin, onRequestAccess }) {
+export function LoginScreen({ onRequestAccess }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
-  const [error, setError] = useState(null); // null | "no-account" | "wrong-password"
+  const [error, setError] = useState(null); // null | "invalid" | "unconfirmed"
+  const [submitting, setSubmitting] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [resetSent, setResetSent] = useState(false);
+  const [resetSubmitting, setResetSubmitting] = useState(false);
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-    const mail = email.trim().toLowerCase();
-    if (mail !== DEMO_ACCOUNT.email) {
-      setError("no-account");
-    } else if (password !== DEMO_ACCOUNT.password) {
-      setError("wrong-password");
+    setSubmitting(true);
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    setSubmitting(false);
+    if (error) {
+      setError(error.message?.toLowerCase().includes("email not confirmed") ? "unconfirmed" : "invalid");
     } else {
       setError(null);
-      onLogin();
     }
+    // Erfolgreicher Login: AuthGate reagiert selbst auf onAuthStateChange.
   };
 
-  const openForgot = () => { setResetEmail(email); setForgotOpen(true); };
+  const openForgot = () => { setResetEmail(email); setResetSent(false); setForgotOpen(true); };
   const closeForgot = () => { setForgotOpen(false); setResetSent(false); };
-  const submitReset = (e) => { e.preventDefault(); setResetSent(true); };
+  const submitReset = async (e) => {
+    e.preventDefault();
+    setResetSubmitting(true);
+    await supabase.auth.resetPasswordForEmail(resetEmail.trim(), {
+      redirectTo: "https://eliaswuestenhoefer.github.io/immoradar-prototyp/",
+    });
+    setResetSubmitting(false);
+    // Immer die gleiche neutrale Bestätigung, unabhängig vom Ergebnis –
+    // sonst ließe sich über die Fehlermeldung erraten, ob ein Konto existiert.
+    setResetSent(true);
+  };
 
   return (
     <div className="ir-root">
@@ -156,12 +167,12 @@ export function LoginScreen({ onLogin, onRequestAccess }) {
               <h1 className="auth-title">Anmelden</h1>
               <p className="auth-sub">Melden Sie sich an, um Ihr Immobilien-Portfolio zu verwalten.</p>
 
-              <div className={"auth-field" + (error === "no-account" ? " tight" : "")}>
+              <div className={"auth-field" + (error === "invalid" ? " tight" : "")}>
                 <label className="auth-label">E-Mail-Adresse</label>
                 <div className="auth-input-wrap">
-                  <AuthIco.mail className={"auth-ic" + (error === "no-account" ? " err" : "")} />
+                  <AuthIco.mail className={"auth-ic" + (error === "invalid" ? " err" : "")} />
                   <input
-                    className={"auth-input" + (error === "no-account" ? " err" : "")}
+                    className={"auth-input" + (error === "invalid" ? " err" : "")}
                     type="email"
                     placeholder="name@firma.de"
                     value={email}
@@ -170,19 +181,12 @@ export function LoginScreen({ onLogin, onRequestAccess }) {
                 </div>
               </div>
 
-              {error === "no-account" && (
-                <div className="auth-error">
-                  <AuthIco.alert />
-                  <p>Kein Konto mit dieser E-Mail-Adresse gefunden. <button type="button" onClick={onRequestAccess}>Zugang anfragen</button></p>
-                </div>
-              )}
-
-              <div className={"auth-field" + (error === "wrong-password" ? " tight" : "")}>
+              <div className={"auth-field" + (error === "invalid" ? " tight" : "")}>
                 <label className="auth-label">Passwort</label>
                 <div className="auth-input-wrap">
-                  <AuthIco.lock className={"auth-ic" + (error === "wrong-password" ? " err" : "")} />
+                  <AuthIco.lock className={"auth-ic" + (error === "invalid" ? " err" : "")} />
                   <input
-                    className={"auth-input pw" + (error === "wrong-password" ? " err" : "")}
+                    className={"auth-input pw" + (error === "invalid" ? " err" : "")}
                     type={showPw ? "text" : "password"}
                     placeholder="••••••••"
                     value={password}
@@ -194,10 +198,17 @@ export function LoginScreen({ onLogin, onRequestAccess }) {
                 </div>
               </div>
 
-              {error === "wrong-password" && (
+              {error === "invalid" && (
                 <div className="auth-error">
                   <AuthIco.alert />
-                  <p>Falsches Passwort. Bitte erneut versuchen.</p>
+                  <p>E-Mail oder Passwort ist falsch, oder es existiert noch kein Konto mit dieser Adresse. <button type="button" onClick={onRequestAccess}>Konto erstellen</button></p>
+                </div>
+              )}
+
+              {error === "unconfirmed" && (
+                <div className="auth-error">
+                  <AuthIco.alert />
+                  <p>Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse über den Link, den wir Ihnen bei der Registrierung geschickt haben.</p>
                 </div>
               )}
 
@@ -205,8 +216,8 @@ export function LoginScreen({ onLogin, onRequestAccess }) {
                 <button type="button" className="auth-link" onClick={openForgot}>Passwort vergessen?</button>
               </div>
 
-              <button className="auth-primary" type="submit">
-                Anmelden
+              <button className="auth-primary" type="submit" disabled={submitting}>
+                {submitting ? "Anmelden …" : "Anmelden"}
                 <AuthIco.arrowRight />
               </button>
 
@@ -217,15 +228,13 @@ export function LoginScreen({ onLogin, onRequestAccess }) {
               </div>
 
               <div className="auth-sso-row">
-                <button type="button" className="auth-ghost" onClick={onLogin}><GoogleIcon />Google</button>
-                <button type="button" className="auth-ghost" onClick={onLogin}><AppleIcon />Apple</button>
+                <button type="button" className="auth-ghost" disabled title="Demnächst verfügbar"><GoogleIcon />Google</button>
+                <button type="button" className="auth-ghost" disabled title="Demnächst verfügbar"><AppleIcon />Apple</button>
               </div>
 
               <p className="auth-foot">
-                Noch kein Konto? <button type="button" className="auth-goldlink" onClick={onRequestAccess}>Zugang anfragen</button>
+                Noch kein Konto? <button type="button" className="auth-goldlink" onClick={onRequestAccess}>Konto erstellen</button>
               </p>
-
-              <p className="auth-demo-hint">Demo-Zugang: {DEMO_ACCOUNT.email} · {DEMO_ACCOUNT.password}</p>
             </form>
           </div>
         </div>
@@ -269,8 +278,8 @@ export function LoginScreen({ onLogin, onRequestAccess }) {
                     />
                   </div>
                 </div>
-                <button className="auth-primary" type="submit">
-                  Link zum Zurücksetzen senden
+                <button className="auth-primary" type="submit" disabled={resetSubmitting}>
+                  {resetSubmitting ? "Wird gesendet …" : "Link zum Zurücksetzen senden"}
                   <AuthIco.arrowRight />
                 </button>
               </form>
@@ -284,13 +293,32 @@ export function LoginScreen({ onLogin, onRequestAccess }) {
 
 export function RequestAccessScreen({ onBack }) {
   const [sent, setSent] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", portfolio: "", message: "" });
+  const [needsConfirmation, setNeedsConfirmation] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+  const [showPw, setShowPw] = useState(false);
+  const [form, setForm] = useState({ name: "", email: "", password: "", portfolio: "", message: "" });
 
   const upd = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    const { data, error } = await supabase.auth.signUp({
+      email: form.email.trim(),
+      password: form.password,
+      options: { data: { name: form.name, portfolio: form.portfolio, message: form.message } },
+    });
+    setSubmitting(false);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setNeedsConfirmation(!data.session);
     setSent(true);
+    // Falls Supabase sofort eine Session zurückgibt (E-Mail-Bestätigung
+    // deaktiviert), übernimmt AuthGate über onAuthStateChange automatisch.
   };
 
   return (
@@ -306,15 +334,19 @@ export function RequestAccessScreen({ onBack }) {
             {sent ? (
               <div className="auth-box auth-success">
                 <div className="auth-success-icon"><AuthIco.check /></div>
-                <h1 className="auth-title" style={{ marginBottom: 4 }}>Anfrage gesendet</h1>
-                <p className="auth-sub" style={{ marginBottom: 8 }}>Danke, {form.name.split(" ")[0] || "willkommen"}! Wir prüfen Ihre Anfrage und melden uns innerhalb von 2 Werktagen per E-Mail.</p>
+                <h1 className="auth-title" style={{ marginBottom: 4 }}>Konto erstellt</h1>
+                <p className="auth-sub" style={{ marginBottom: 8 }}>
+                  {needsConfirmation
+                    ? "Bitte bestätigen Sie Ihre E-Mail-Adresse über den Link, den wir Ihnen gerade geschickt haben. Danach können Sie sich anmelden."
+                    : "Sie werden angemeldet …"}
+                </p>
                 <button className="auth-link" onClick={onBack}>Zurück zur Anmeldung</button>
               </div>
             ) : (
               <form className="auth-box" onSubmit={submit} noValidate>
                 <p className="auth-eyebrow">Neu bei Immoradar</p>
-                <h1 className="auth-title">Zugang anfragen</h1>
-                <p className="auth-sub">Immoradar ist aktuell auf Einladung. Erzählen Sie uns kurz von Ihrem Portfolio – wir melden uns innerhalb von 2 Werktagen.</p>
+                <h1 className="auth-title">Konto erstellen</h1>
+                <p className="auth-sub">Erstellen Sie Ihr kostenloses Konto, um Ihr Immobilien-Portfolio zu verwalten.</p>
 
                 <div className="auth-field">
                   <label className="auth-label">Name</label>
@@ -333,6 +365,25 @@ export function RequestAccessScreen({ onBack }) {
                 </div>
 
                 <div className="auth-field">
+                  <label className="auth-label">Passwort</label>
+                  <div className="auth-input-wrap">
+                    <AuthIco.lock className="auth-ic" />
+                    <input
+                      className="auth-input pw"
+                      type={showPw ? "text" : "password"}
+                      placeholder="Mindestens 6 Zeichen"
+                      value={form.password}
+                      onChange={upd("password")}
+                      minLength={6}
+                      required
+                    />
+                    {showPw
+                      ? <AuthIco.eyeOff className="auth-ic right" onClick={() => setShowPw(false)} />
+                      : <AuthIco.eye className="auth-ic right" onClick={() => setShowPw(true)} />}
+                  </div>
+                </div>
+
+                <div className="auth-field">
                   <label className="auth-label">Anzahl Objekte im Portfolio</label>
                   <div className="auth-input-wrap">
                     <AuthIco.building className="auth-ic" />
@@ -345,8 +396,15 @@ export function RequestAccessScreen({ onBack }) {
                   <textarea className="auth-textarea" placeholder="Kurz zu Ihrem Portfolio oder Ihren Erwartungen …" value={form.message} onChange={upd("message")} />
                 </div>
 
-                <button className="auth-primary" type="submit">
-                  Anfrage senden
+                {error && (
+                  <div className="auth-error" style={{ marginTop: -12 }}>
+                    <AuthIco.alert />
+                    <p>{error}</p>
+                  </div>
+                )}
+
+                <button className="auth-primary" type="submit" disabled={submitting}>
+                  {submitting ? "Wird erstellt …" : "Konto erstellen"}
                   <AuthIco.arrowRight />
                 </button>
 
@@ -359,9 +417,87 @@ export function RequestAccessScreen({ onBack }) {
         </div>
 
         <BrandPanel
-          tag="Zugang auf Einladung"
-          title="Exklusiver Zugang für ausgewählte Kapitalanleger."
-          body="Wir prüfen jede Anfrage persönlich, um die Qualität für alle Nutzer:innen hoch zu halten."
+          tag="Jetzt registrieren"
+          title="Starten Sie in wenigen Minuten."
+          body="Erstellen Sie Ihr Konto und verwalten Sie Ihr erstes Objekt noch heute."
+        />
+      </div>
+    </div>
+  );
+}
+
+export function NewPasswordScreen({ onDone }) {
+  const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    const { error } = await supabase.auth.updateUser({ password });
+    setSubmitting(false);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    onDone();
+  };
+
+  return (
+    <div className="ir-root">
+      <div className="auth-shell">
+        <div className="auth-left">
+          <div className="auth-brand">
+            <RadarMark />
+            <span className="auth-brand-name">Immoradar</span>
+          </div>
+
+          <div className="auth-center">
+            <form className="auth-box" onSubmit={submit} noValidate>
+              <p className="auth-eyebrow">Neues Passwort</p>
+              <h1 className="auth-title">Passwort festlegen</h1>
+              <p className="auth-sub">Legen Sie ein neues Passwort für Ihr Konto fest.</p>
+
+              <div className="auth-field" style={{ marginBottom: 24 }}>
+                <label className="auth-label">Neues Passwort</label>
+                <div className="auth-input-wrap">
+                  <AuthIco.lock className="auth-ic" />
+                  <input
+                    className="auth-input pw"
+                    type={showPw ? "text" : "password"}
+                    placeholder="Mindestens 6 Zeichen"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    minLength={6}
+                    required
+                  />
+                  {showPw
+                    ? <AuthIco.eyeOff className="auth-ic right" onClick={() => setShowPw(false)} />
+                    : <AuthIco.eye className="auth-ic right" onClick={() => setShowPw(true)} />}
+                </div>
+              </div>
+
+              {error && (
+                <div className="auth-error" style={{ marginTop: -12 }}>
+                  <AuthIco.alert />
+                  <p>{error}</p>
+                </div>
+              )}
+
+              <button className="auth-primary" type="submit" disabled={submitting}>
+                {submitting ? "Wird gespeichert …" : "Neues Passwort speichern"}
+                <AuthIco.arrowRight />
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <BrandPanel
+          tag="Portfolio-Cockpit für Kapitalanleger"
+          title="Fast geschafft."
+          body="Legen Sie ein neues Passwort fest, um wieder auf Ihr Portfolio zuzugreifen."
         />
       </div>
     </div>

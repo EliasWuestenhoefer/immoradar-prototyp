@@ -1,19 +1,44 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import App from "./App.jsx";
-import { LoginScreen, RequestAccessScreen } from "./components/Auth.jsx";
+import { supabase } from "./utils/supabaseClient.js";
+import { LoginScreen, RequestAccessScreen, NewPasswordScreen } from "./components/Auth.jsx";
 
 export default function AuthGate() {
-  const [authed, setAuthed] = useState(false);
-  const [screen, setScreen] = useState("login"); // login | request
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [screen, setScreen] = useState("login"); // login | request | recovery
 
-  const logout = () => {
-    setAuthed(false);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+      if (event === "PASSWORD_RECOVERY") setScreen("recovery");
+      setSession(newSession);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const logout = async () => {
+    await supabase.auth.signOut();
     setScreen("login");
   };
 
-  if (authed) return <App onLogout={logout} />;
+  if (loading) return null;
+
+  if (screen === "recovery") {
+    return <NewPasswordScreen onDone={() => setScreen("login")} />;
+  }
+
+  if (session) {
+    return <App onLogout={logout} userEmail={session.user.email} />;
+  }
 
   return screen === "login"
-    ? <LoginScreen onLogin={() => setAuthed(true)} onRequestAccess={() => setScreen("request")} />
+    ? <LoginScreen onRequestAccess={() => setScreen("request")} />
     : <RequestAccessScreen onBack={() => setScreen("login")} />;
 }

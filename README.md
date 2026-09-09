@@ -1,11 +1,13 @@
 # Immoradar – Prototyp
 
-Klickbarer Frontend-Prototyp mit Dummy-Daten (keine echte Berechnungslogik, kein Backend).
+Klickbarer Frontend-Prototyp mit Dummy-Daten für Objekte (keine echte
+Berechnungslogik). Anmeldung/Registrierung laufen über Supabase Auth.
 
 ## Lokal starten (Entwicklung mit Live-Reload)
 
 ```
 npm install
+cp .env.example .env   # Supabase-URL und anon key eintragen
 npm run dev
 ```
 
@@ -36,7 +38,29 @@ src/
     Bausteine.jsx            Wiederverwendbare UI-Bausteine (KpiCard, Panel, ListRow, ...)
   utils/
     format.js                Formatierungshilfen (eur, pct)
+    supabaseClient.js        Supabase-Client (liest VITE_SUPABASE_URL/ANON_KEY)
+  components/
+    Auth.jsx                 Login, Registrierung, Passwort-Fenster
+supabase/
+  profiles.sql               Schema + Trigger für die profiles-Tabelle (im Supabase SQL-Editor ausführen)
 ```
+
+## Supabase-Authentifizierung
+
+Login, Registrierung und Passwort-zurücksetzen laufen über Supabase Auth
+(`src/utils/supabaseClient.js`). Nötige Env-Variablen (lokal in `.env`,
+für den Deploy als GitHub-Actions-Secrets `VITE_SUPABASE_URL` und
+`VITE_SUPABASE_ANON_KEY` unter Repo-Settings → Secrets and variables →
+Actions):
+
+```
+VITE_SUPABASE_URL=...
+VITE_SUPABASE_ANON_KEY=...
+```
+
+`supabase/profiles.sql` einmalig im Supabase SQL-Editor ausführen, legt
+die `profiles`-Tabelle inkl. Trigger an, der bei jeder Registrierung
+automatisch eine Zeile anlegt.
 
 ## Deployment auf GitHub Pages
 

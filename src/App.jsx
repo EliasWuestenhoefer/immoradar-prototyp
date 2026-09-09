@@ -13,7 +13,7 @@ import {
   AnpassenButton, AnpassenSheet, MietVergleich, DokumentAnsicht, EnergieAusweis,
 } from "./components/Bausteine.jsx";
 
-export default function ImmoradarPrototype({ onLogout }) {
+export default function ImmoradarPrototype({ onLogout, userEmail }) {
   const [tab, setTab] = useState("dashboard");
   const [objektId, setObjektId] = useState(null);
   const [sektion, setSektion] = useState("finanzen");
@@ -141,7 +141,7 @@ export default function ImmoradarPrototype({ onLogout }) {
 
   const untertitel = knoten ? objekt.name
     : objekt ? objekt.street
-    : tab === "dashboard" ? "Hallo Alex" : null;
+    : tab === "dashboard" ? (userEmail ? "Angemeldet als " + userEmail : "Hallo Alex") : null;
 
   const viewKey = [tab, objektId, sektion, pfad.map((p) => p.type + (p.id || p.name || "")).join(">"), faqId, settingsId, anfrage, supportView].join("|");
 
