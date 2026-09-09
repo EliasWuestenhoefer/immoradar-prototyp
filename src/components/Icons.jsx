@@ -16,5 +16,6 @@ export const Ico = {
   down: (p) => (<svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M12 6v12M6.5 12.5 12 18l5.5-5.5" /></svg>),
   folder: (p) => (<svg viewBox="0 0 24 24" fill="none" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M3.5 6.5A1.5 1.5 0 0 1 5 5h4l2 2.5h8a1.5 1.5 0 0 1 1.5 1.5v8.5A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5z" /></svg>),
   bell: (p) => (<svg viewBox="0 0 24 24" fill="none" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M18 16V11a6 6 0 1 0-12 0v5l-1.5 2.5h15z" /><path d="M10 20.5h4" /></svg>),
+  logout: (p) => (<svg viewBox="0 0 24 24" fill="none" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M14 4.5H7.5A1.5 1.5 0 0 0 6 6v12a1.5 1.5 0 0 0 1.5 1.5H14" /><path d="M10.5 12h10m0 0-3.5-3.5m3.5 3.5L17 15.5" /></svg>),
 };
 export const SECTION_ICON = { finanzen: Ico.finanzen, mieter: Ico.mieter, technik: Ico.technik };

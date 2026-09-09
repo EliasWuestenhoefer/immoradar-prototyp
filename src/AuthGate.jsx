@@ -6,7 +6,12 @@ export default function AuthGate() {
   const [authed, setAuthed] = useState(false);
   const [screen, setScreen] = useState("login"); // login | request
 
-  if (authed) return <App />;
+  const logout = () => {
+    setAuthed(false);
+    setScreen("login");
+  };
+
+  if (authed) return <App onLogout={logout} />;
 
   return screen === "login"
     ? <LoginScreen onLogin={() => setAuthed(true)} onRequestAccess={() => setScreen("request")} />

@@ -24,6 +24,7 @@ const AuthIco = {
   arrowRight: (p) => (<svg width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M5 12h14M13 6l6 6-6 6" /></svg>),
   alert: (p) => (<svg width="15" height="15" viewBox="0 0 24 24" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="12" cy="12" r="9" /><path d="M12 8v5" /><circle cx="12" cy="15.8" r="0.9" fill="currentColor" stroke="none" /></svg>),
   check: (p) => (<svg width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="m5 12.5 4.5 4.5L19 7" /></svg>),
+  close: (p) => (<svg viewBox="0 0 24 24" strokeWidth="1.8" strokeLinecap="round" {...p}><path d="m6.5 6.5 11 11M17.5 6.5l-11 11" /></svg>),
 };
 
 function GoogleIcon() {
@@ -51,22 +52,51 @@ function BrandPanel({ tag, title, body }) {
     <div className="auth-right">
       <div className="auth-tag">{tag}</div>
 
-      <svg className="auth-skyline" width="100%" height="300" viewBox="0 0 600 360" preserveAspectRatio="xMidYMax slice">
-        <g stroke="#FFFFFF" strokeWidth="1" opacity="0.06">
-          {[60, 120, 180, 240, 300, 360, 420, 480, 540].map((x) => <line key={x} x1={x} y1="0" x2={x} y2="360" />)}
+      <svg className="auth-skyline" width="100%" height="480" viewBox="0 0 880 480" preserveAspectRatio="xMidYMax slice">
+        <defs>
+          <linearGradient id="auth-skyline-fade" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#16293F" stopOpacity="0" />
+            <stop offset="100%" stopColor="#16293F" stopOpacity="1" />
+          </linearGradient>
+        </defs>
+
+        <g id="auth-skyline-bldgs">
+          <rect x="60" y="120" width="60" height="180" fill="#0B1420" />
+          <rect x="130" y="70" width="70" height="230" fill="#101E30" />
+          <rect x="215" y="30" width="52" height="270" fill="#0B1420" />
+          <rect x="280" y="150" width="80" height="150" fill="#101E30" />
+          <rect x="375" y="0" width="46" height="300" fill="#0B1420" />
+          <circle cx="398" cy="-8" r="6" fill="#0B1420" />
+          <rect x="435" y="100" width="65" height="200" fill="#101E30" />
+          <rect x="515" y="55" width="42" height="245" fill="#0B1420" />
+          <rect x="570" y="170" width="58" height="130" fill="#101E30" />
+          <rect x="645" y="90" width="48" height="210" fill="#0B1420" />
+          <rect x="710" y="140" width="60" height="160" fill="#101E30" />
+          <rect x="785" y="200" width="55" height="100" fill="#0B1420" />
+          <g fill="#D9BD8C" opacity="0.85">
+            <rect x="80" y="150" width="6" height="8" />
+            <rect x="150" y="110" width="6" height="8" />
+            <rect x="230" y="70" width="6" height="8" />
+            <rect x="300" y="190" width="6" height="8" />
+            <rect x="390" y="40" width="6" height="8" />
+            <rect x="455" y="140" width="6" height="8" />
+            <rect x="530" y="95" width="6" height="8" />
+            <rect x="590" y="210" width="6" height="8" />
+            <rect x="665" y="130" width="6" height="8" />
+            <rect x="730" y="180" width="6" height="8" />
+          </g>
         </g>
-        <rect x="40" y="180" width="80" height="180" fill="#2C4363" opacity="0.85" />
-        <rect x="140" y="110" width="100" height="250" fill="#12203380" opacity="0.9" />
-        <g fill="#F6F5F2" opacity="0.5">
-          {[126, 158, 190, 222].map((y) => [154, 180, 206].map((x) => <rect key={x + "-" + y} x={x} y={y} width="14" height="18" />))}
+
+        <line x1="0" y1="300" x2="880" y2="300" stroke="#D9BD8C" strokeWidth="1" opacity="0.2" />
+
+        <use href="#auth-skyline-bldgs" transform="translate(0,600) scale(1,-1)" opacity="0.28" />
+        <g stroke="#8FA5BE" strokeWidth="1" opacity="0.12">
+          <line x1="0" y1="330" x2="880" y2="330" />
+          <line x1="0" y1="360" x2="880" y2="360" />
+          <line x1="0" y1="395" x2="880" y2="395" />
+          <line x1="0" y1="430" x2="880" y2="430" />
         </g>
-        <rect x="260" y="220" width="70" height="140" fill="#2C4363" opacity="0.75" />
-        <rect x="350" y="140" width="90" height="220" fill="#0F1B2ACC" opacity="0.95" />
-        <g fill="#F6F5F2" opacity="0.45">
-          {[156, 188, 220].map((y) => [364, 392].map((x) => <rect key={x + "-" + y} x={x} y={y} width="14" height="18" />))}
-        </g>
-        <rect x="460" y="200" width="60" height="160" fill="#2C4363" opacity="0.85" />
-        <circle cx="395" cy="128" r="4" fill="#B79561" />
+        <rect x="0" y="300" width="880" height="180" fill="url(#auth-skyline-fade)" />
       </svg>
 
       {tag === "Portfolio-Cockpit für Kapitalanleger" && (
@@ -90,6 +120,9 @@ export function LoginScreen({ onLogin, onRequestAccess }) {
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState(null); // null | "no-account" | "wrong-password"
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetSent, setResetSent] = useState(false);
 
   const submit = (e) => {
     e.preventDefault();
@@ -103,6 +136,10 @@ export function LoginScreen({ onLogin, onRequestAccess }) {
       onLogin();
     }
   };
+
+  const openForgot = () => { setResetEmail(email); setForgotOpen(true); };
+  const closeForgot = () => { setForgotOpen(false); setResetSent(false); };
+  const submitReset = (e) => { e.preventDefault(); setResetSent(true); };
 
   return (
     <div className="ir-root">
@@ -165,7 +202,7 @@ export function LoginScreen({ onLogin, onRequestAccess }) {
               )}
 
               <div className="auth-row-end">
-                <button type="button" className="auth-link">Passwort vergessen?</button>
+                <button type="button" className="auth-link" onClick={openForgot}>Passwort vergessen?</button>
               </div>
 
               <button className="auth-primary" type="submit">
@@ -185,7 +222,7 @@ export function LoginScreen({ onLogin, onRequestAccess }) {
               </div>
 
               <p className="auth-foot">
-                Neu hier? <button type="button" className="auth-goldlink" onClick={onRequestAccess}>Zugang anfragen</button>
+                Noch kein Konto? <button type="button" className="auth-goldlink" onClick={onRequestAccess}>Zugang anfragen</button>
               </p>
 
               <p className="auth-demo-hint">Demo-Zugang: {DEMO_ACCOUNT.email} · {DEMO_ACCOUNT.password}</p>
@@ -199,6 +236,48 @@ export function LoginScreen({ onLogin, onRequestAccess }) {
           body="Finanzen, Mieter und Technik für alle Ihre Objekte – gebündelt an einem Ort."
         />
       </div>
+
+      {forgotOpen && (
+        <div className="overlay" onClick={closeForgot}>
+          <div className="sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="sheet-head">
+              <h3>Passwort zurücksetzen</h3>
+              <button className="iconbtn sm" onClick={closeForgot} aria-label="Schließen"><AuthIco.close /></button>
+            </div>
+
+            {resetSent ? (
+              <>
+                <p className="sheet-sub">Falls ein Konto mit dieser E-Mail-Adresse existiert, haben wir Ihnen einen Link zum Zurücksetzen gesendet.</p>
+                <div className="form-actions">
+                  <button type="button" className="ghost" onClick={closeForgot}>Schließen</button>
+                </div>
+              </>
+            ) : (
+              <form onSubmit={submitReset} noValidate>
+                <p className="sheet-sub" style={{ marginBottom: 20 }}>Geben Sie Ihre E-Mail-Adresse ein. Wir senden Ihnen einen Link zum Zurücksetzen Ihres Passworts.</p>
+                <div className="auth-field" style={{ marginBottom: 22 }}>
+                  <label className="auth-label">E-Mail-Adresse</label>
+                  <div className="auth-input-wrap">
+                    <AuthIco.mail className="auth-ic" />
+                    <input
+                      className="auth-input"
+                      type="email"
+                      placeholder="name@firma.de"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+                <button className="auth-primary" type="submit">
+                  Link zum Zurücksetzen senden
+                  <AuthIco.arrowRight />
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

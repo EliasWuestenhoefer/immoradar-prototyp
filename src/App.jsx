@@ -13,7 +13,7 @@ import {
   AnpassenButton, AnpassenSheet, MietVergleich, DokumentAnsicht, EnergieAusweis,
 } from "./components/Bausteine.jsx";
 
-export default function ImmoradarPrototype() {
+export default function ImmoradarPrototype({ onLogout }) {
   const [tab, setTab] = useState("dashboard");
   const [objektId, setObjektId] = useState(null);
   const [sektion, setSektion] = useState("finanzen");
@@ -164,6 +164,7 @@ export default function ImmoradarPrototype() {
             </div>
           </div>
           <div className="topbar-right">
+            <button className="iconbtn" onClick={onLogout} aria-label="Abmelden" title="Abmelden"><Ico.logout /></button>
             {tab === "dashboard" && !objekt && (
               <>
                 <AnpassenButton label="Dashboard anpassen" onClick={() => setAnpassen("dash")} />
