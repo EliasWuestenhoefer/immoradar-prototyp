@@ -163,7 +163,7 @@ export function LoginScreen({ onRequestAccess }) {
 
           <div className="auth-center">
             <form className="auth-box" onSubmit={submit} noValidate>
-              <p className="auth-eyebrow">Willkommen zurück</p>
+              <p className="auth-eyebrow">Willkommen zurück!</p>
               <h1 className="auth-title">Anmelden</h1>
               <p className="auth-sub">Melden Sie sich an, um Ihr Immobilien-Portfolio zu verwalten.</p>
 
@@ -344,7 +344,7 @@ export function RequestAccessScreen({ onBack }) {
               </div>
             ) : (
               <form className="auth-box" onSubmit={submit} noValidate>
-                <p className="auth-eyebrow">Neu bei Immoradar</p>
+                <p className="auth-eyebrow">Neu bei Immoradar?</p>
                 <h1 className="auth-title">Konto erstellen</h1>
                 <p className="auth-sub">Erstellen Sie Ihr kostenloses Konto, um Ihr Immobilien-Portfolio zu verwalten.</p>
 
