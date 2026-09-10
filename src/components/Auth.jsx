@@ -308,7 +308,10 @@ export function RequestAccessScreen({ onBack }) {
     const { data, error } = await supabase.auth.signUp({
       email: form.email.trim(),
       password: form.password,
-      options: { data: { name: form.name, portfolio: form.portfolio, message: form.message } },
+      options: {
+        data: { name: form.name, portfolio: form.portfolio, message: form.message },
+        emailRedirectTo: "https://eliaswuestenhoefer.github.io/immoradar-prototyp/",
+      },
     });
     setSubmitting(false);
     if (error) {
