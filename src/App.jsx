@@ -32,6 +32,8 @@ export default function ImmoradarPrototype({ onLogout, userEmail, userName }) {
   const [loeschenGrund, setLoeschenGrund] = useState("verkauft");
   const [verkaufsdatum, setVerkaufsdatum] = useState("");
   const [verkaufspreis, setVerkaufspreis] = useState("");
+  const [restschuldVerkauf, setRestschuldVerkauf] = useState("");
+  const [verkaufsnebenkosten, setVerkaufsnebenkosten] = useState("");
   const [verkaufsHistorie, setVerkaufsHistorie] = useState([]);
   const [beteiligte, setBeteiligte] = useState({}); // je Objekt-ID: Array von Beteiligten
   const [kpiDrag, setKpiDrag] = useState(null); // { key, idx }
@@ -72,13 +74,22 @@ export default function ImmoradarPrototype({ onLogout, userEmail, userName }) {
     setLoeschenGrund("verkauft");
     setVerkaufsdatum("");
     setVerkaufspreis("");
+    setRestschuldVerkauf("");
+    setVerkaufsnebenkosten("");
     setLoeschenBestaetigen(true);
   };
-  const loeschenMoeglich = loeschenGrund !== "verkauft" || (!!verkaufsdatum && !!verkaufspreis);
+  const loeschenMoeglich = loeschenGrund !== "verkauft" || (!!verkaufsdatum && !!verkaufspreis && !!restschuldVerkauf && !!verkaufsnebenkosten);
+  const nettoErloesVerkauf = (Number(verkaufspreis) || 0) - (Number(restschuldVerkauf) || 0) - (Number(verkaufsnebenkosten) || 0);
   const objektLoeschen = (o) => {
     if (loeschenGrund === "verkauft") {
       setVerkaufsHistorie([...verkaufsHistorie, {
-        objektId: o.id, name: o.name, datum: verkaufsdatum, preis: Number(verkaufspreis) || 0,
+        objektId: o.id,
+        name: o.name,
+        datum: verkaufsdatum,
+        preis: Number(verkaufspreis) || 0,
+        restschuld: Number(restschuldVerkauf) || 0,
+        nebenkosten: Number(verkaufsnebenkosten) || 0,
+        nettoErloes: nettoErloesVerkauf,
       }]);
     }
     setObjekteListe(objekteListe.filter((x) => x.id !== o.id));
@@ -849,16 +860,31 @@ export default function ImmoradarPrototype({ onLogout, userEmail, userName }) {
             </div>
 
             {loeschenGrund === "verkauft" && (
-              <div className="two-col">
-                <label className="field">
-                  <span>Verkaufsdatum</span>
-                  <input type="date" value={verkaufsdatum} onChange={(e) => setVerkaufsdatum(e.target.value)} />
-                </label>
-                <label className="field">
-                  <span>Verkaufspreis</span>
-                  <input type="number" min="0" step="1000" value={verkaufspreis} onChange={(e) => setVerkaufspreis(e.target.value)} placeholder="z. B. 2100000" />
-                </label>
-              </div>
+              <>
+                <div className="two-col">
+                  <label className="field">
+                    <span>Verkaufsdatum</span>
+                    <input type="date" value={verkaufsdatum} onChange={(e) => setVerkaufsdatum(e.target.value)} />
+                  </label>
+                  <label className="field">
+                    <span>Verkaufspreis</span>
+                    <input type="number" min="0" step="1000" value={verkaufspreis} onChange={(e) => setVerkaufspreis(e.target.value)} placeholder="z. B. 2100000" />
+                  </label>
+                </div>
+                <div className="two-col">
+                  <label className="field">
+                    <span>Restschuld zum Verkaufszeitpunkt</span>
+                    <input type="number" min="0" step="1000" value={restschuldVerkauf} onChange={(e) => setRestschuldVerkauf(e.target.value)} placeholder="z. B. 430000" />
+                  </label>
+                  <label className="field">
+                    <span>Verkaufsnebenkosten (Makler, Notar)</span>
+                    <input type="number" min="0" step="500" value={verkaufsnebenkosten} onChange={(e) => setVerkaufsnebenkosten(e.target.value)} placeholder="z. B. 25000" />
+                  </label>
+                </div>
+                {loeschenMoeglich && (
+                  <p className="hint" style={{ marginTop: -8 }}>Netto-Erlös: <strong>{eur(nettoErloesVerkauf)}</strong> (Verkaufspreis abzüglich Restschuld und Nebenkosten)</p>
+                )}
+              </>
             )}
 
             <div className="form-actions">
