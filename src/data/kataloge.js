@@ -77,3 +77,9 @@ export const VERMOEGEN_VERLAUF = [
 ];
 
 export const STEUERSATZ_DEFAULT = 42;
+
+export const BETEILIGTE_ROLLEN = ["WEG-Verwalter", "SEV-Verwalter", "Makler", "Notar", "Verkäufer", "Käufer"];
+export const KONTAKT_TYPEN = [
+  "Mieter", "Handwerker", "Hausmeister", "Bank", "Steuerberater",
+  "Versicherung", "Gutachter", "Anwalt", "Verwaltungsbeirat", "Behörde", "Lieferant", "Sonstiges",
+];

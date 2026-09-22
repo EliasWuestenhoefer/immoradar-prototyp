@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { Ico, SECTION_ICON } from "./Icons.jsx";
-import { SEKTIONEN } from "../data/kataloge.js";
+import { SEKTIONEN, BETEILIGTE_ROLLEN, KONTAKT_TYPEN } from "../data/kataloge.js";
 import { eur } from "../utils/format.js";
 
 export function KpiCard({ label, value, note, onClick, badge, control }) {
@@ -106,6 +107,8 @@ export function AnpassenButton({ label = "Ansicht anpassen", onClick }) {
 
 /* Auswahl- und Sortier-Dialog für KPI-Karten */
 export function AnpassenSheet({ titel, hinweis, katalog, auswahl, setAuswahl, standard, onClose }) {
+  const [dragIdx, setDragIdx] = useState(null);
+  const [overIdx, setOverIdx] = useState(null);
   const gewaehlt = auswahl.map((id) => katalog.find((k) => k.id === id)).filter(Boolean);
   const rest = katalog.filter((k) => !auswahl.includes(k.id));
   const toggle = (id) => setAuswahl(auswahl.includes(id) ? auswahl.filter((x) => x !== id) : [...auswahl, id]);
@@ -114,6 +117,13 @@ export function AnpassenSheet({ titel, hinweis, katalog, auswahl, setAuswahl, st
     const ziel = idx + dir;
     if (ziel < 0 || ziel >= next.length) return;
     [next[idx], next[ziel]] = [next[ziel], next[idx]];
+    setAuswahl(next);
+  };
+  const dropAuf = (idx) => {
+    if (dragIdx === null || dragIdx === idx) return;
+    const next = [...auswahl];
+    const [verschoben] = next.splice(dragIdx, 1);
+    next.splice(idx, 0, verschoben);
     setAuswahl(next);
   };
   return (
@@ -128,10 +138,20 @@ export function AnpassenSheet({ titel, hinweis, katalog, auswahl, setAuswahl, st
         </div>
 
         <div className="anp-block">
-          <div className="anp-label">Angezeigt · {gewaehlt.length} Karten</div>
+          <div className="anp-label">Angezeigt · {gewaehlt.length} Karten · zum Sortieren ziehen</div>
           <div className="anp-list">
             {gewaehlt.map((k, idx) => (
-              <div className="anp-item on" key={k.id}>
+              <div
+                className={"anp-item on" + (dragIdx === idx ? " dragging" : "") + (overIdx === idx && dragIdx !== idx ? " drag-over" : "")}
+                key={k.id}
+                draggable
+                onDragStart={() => setDragIdx(idx)}
+                onDragOver={(e) => { e.preventDefault(); setOverIdx(idx); }}
+                onDragLeave={() => setOverIdx((o) => (o === idx ? null : o))}
+                onDrop={(e) => { e.preventDefault(); dropAuf(idx); setDragIdx(null); setOverIdx(null); }}
+                onDragEnd={() => { setDragIdx(null); setOverIdx(null); }}
+              >
+                <span className="anp-grip" aria-hidden="true"><Ico.grip /></span>
                 <span className="anp-order">{idx + 1}</span>
                 <span className="anp-name">{k.label}</span>
                 <span className="anp-moves">
@@ -281,5 +301,153 @@ export function VermoegenChart({ data }) {
         <text key={d.label} x={x(i)} y={H - 6} textAnchor="middle" fontSize="12" fill="#6C7178">{d.label}</text>
       ))}
     </svg>
+  );
+}
+
+/* Beteiligte je Objekt */
+export function BeteiligtePanel({ liste, mieter, onAdd, onRemove }) {
+  const [sheetOffen, setSheetOffen] = useState(false);
+
+  return (
+    <Panel
+      title="Beteiligte"
+      sub="Wer ist bei diesem Objekt wofür zuständig – Hausverwaltung, Makler, Notar, Handwerker."
+      action={<button className="primary" onClick={() => setSheetOffen(true)}><Ico.plus /> Beteiligten hinzufügen</button>}
+    >
+      {liste.length === 0 ? (
+        <div className="beteiligte-empty">
+          <Ico.people />
+          <h4>Noch keine Beteiligten</h4>
+          <p>Verknüpfen Sie Hausverwaltung, Makler, Notar oder andere Kontakte mit diesem Objekt.</p>
+        </div>
+      ) : (
+        <div className="list">
+          {liste.map((b) => (
+            <div className="beteiligter-row" key={b.id}>
+              <div className="beteiligter-main">
+                <span className="beteiligter-name">
+                  {b.name}
+                  {b.hauptansprechpartner && <span className="premium" style={{ marginLeft: 8 }}>Hauptansprechpartner</span>}
+                </span>
+                <span className="beteiligter-meta">
+                  {b.rolle} · {b.kontaktTyp}
+                  {(b.gueltigAb || b.gueltigBis) ? ` · gültig ${b.gueltigAb || "…"} – ${b.gueltigBis || "…"}` : ""}
+                  {b.hinweis ? ` · ${b.hinweis}` : ""}
+                </span>
+              </div>
+              <button className="iconbtn sm" onClick={() => onRemove(b.id)} aria-label="Beteiligten entfernen"><Ico.trash /></button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {sheetOffen && (
+        <BeteiligtenSheet mieter={mieter} onClose={() => setSheetOffen(false)} onSave={(b) => { onAdd(b); setSheetOffen(false); }} />
+      )}
+    </Panel>
+  );
+}
+
+function BeteiligtenSheet({ mieter, onClose, onSave }) {
+  const [kontaktTyp, setKontaktTyp] = useState(KONTAKT_TYPEN[0]);
+  const [mieterId, setMieterId] = useState("");
+  const [name, setName] = useState("");
+  const [rolle, setRolle] = useState(BETEILIGTE_ROLLEN[0]);
+  const [hinweis, setHinweis] = useState("");
+  const [gueltigAb, setGueltigAb] = useState("");
+  const [gueltigBis, setGueltigBis] = useState("");
+  const [hauptansprechpartner, setHauptansprechpartner] = useState(false);
+
+  const istMieterTyp = kontaktTyp === "Mieter";
+  const nameGueltig = istMieterTyp ? !!mieterId : name.trim().length > 0;
+
+  const wechsleKontaktTyp = (t) => { setKontaktTyp(t); setMieterId(""); setName(""); };
+
+  const speichern = () => {
+    if (!nameGueltig) return;
+    const finalName = istMieterTyp ? (mieter.find((m) => m.id === mieterId)?.name || "") : name.trim();
+    onSave({
+      id: Date.now().toString(36),
+      kontaktTyp,
+      name: finalName,
+      rolle,
+      hinweis: hinweis.trim(),
+      gueltigAb,
+      gueltigBis,
+      hauptansprechpartner,
+    });
+  };
+
+  return (
+    <div className="overlay" onClick={onClose}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-head">
+          <h3>Beteiligten hinzufügen</h3>
+          <button className="iconbtn sm" onClick={onClose} aria-label="Schließen"><Ico.close /></button>
+        </div>
+
+        <label className="field">
+          <span>Kontaktart *</span>
+          <select value={kontaktTyp} onChange={(e) => wechsleKontaktTyp(e.target.value)}>
+            {KONTAKT_TYPEN.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </label>
+
+        {istMieterTyp ? (
+          <label className="field">
+            <span>Mieter *</span>
+            <select value={mieterId} onChange={(e) => setMieterId(e.target.value)}>
+              <option value="">Bitte wählen</option>
+              {mieter.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+            </select>
+          </label>
+        ) : (
+          <label className="field">
+            <span>Name *</span>
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name oder Firma" />
+          </label>
+        )}
+
+        <label className="field">
+          <span>Rolle *</span>
+          <select value={rolle} onChange={(e) => setRolle(e.target.value)}>
+            {BETEILIGTE_ROLLEN.map((r) => <option key={r} value={r}>{r}</option>)}
+          </select>
+        </label>
+
+        <label className="field">
+          <span>Hinweis zur Rolle (optional)</span>
+          <input value={hinweis} onChange={(e) => setHinweis(e.target.value)} placeholder="z. B. Versammlungsleitung ETV 2026" />
+        </label>
+
+        <div className="two-col">
+          <label className="field">
+            <span>Gültig ab</span>
+            <input type="date" value={gueltigAb} onChange={(e) => setGueltigAb(e.target.value)} />
+          </label>
+          <label className="field">
+            <span>Gültig bis</span>
+            <input type="date" value={gueltigBis} onChange={(e) => setGueltigBis(e.target.value)} />
+          </label>
+        </div>
+
+        <div className="hauptansprech-row">
+          <div>
+            <div className="hauptansprech-title">Hauptansprechpartner</div>
+            <div className="hauptansprech-note">Nur einer je Rolle und Objekt</div>
+          </div>
+          <button
+            className={"switch" + (hauptansprechpartner ? " on" : "")}
+            onClick={() => setHauptansprechpartner(!hauptansprechpartner)}
+            aria-label="Hauptansprechpartner umschalten"
+          ><span /></button>
+        </div>
+
+        <div className="form-actions">
+          <button className="primary" onClick={speichern} disabled={!nameGueltig}>Speichern</button>
+          <button className="ghost" onClick={onClose}>Abbrechen</button>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -11,7 +11,7 @@ import { Ico } from "./components/Icons.jsx";
 import { ObjektBild } from "./components/ObjektBild.jsx";
 import {
   KpiCard, DataRows, Panel, ListRow, Segmented, ObjektTabs,
-  AnpassenButton, AnpassenSheet, MietVergleich, DokumentAnsicht, EnergieAusweis, VermoegenChart,
+  AnpassenButton, AnpassenSheet, MietVergleich, DokumentAnsicht, EnergieAusweis, VermoegenChart, BeteiligtePanel,
 } from "./components/Bausteine.jsx";
 
 export default function ImmoradarPrototype({ onLogout, userEmail }) {
@@ -29,6 +29,7 @@ export default function ImmoradarPrototype({ onLogout, userEmail }) {
   const [objekteListe, setObjekteListe] = useState(OBJEKTE);
   const [steuersatz, setSteuersatz] = useState({}); // je Objekt-ID, Fallback STEUERSATZ_DEFAULT
   const [loeschenBestaetigen, setLoeschenBestaetigen] = useState(false);
+  const [beteiligte, setBeteiligte] = useState({}); // je Objekt-ID: Array von Beteiligten
 
   // Personalisierung
   const [dashKpis, setDashKpis] = useState(DASH_DEFAULT);
@@ -65,6 +66,17 @@ export default function ImmoradarPrototype({ onLogout, userEmail }) {
     setObjekteListe(objekteListe.filter((o) => o.id !== id));
     setLoeschenBestaetigen(false);
     setObjektId(null);
+  };
+
+  const beteiligteFuer = (id) => beteiligte[id] || [];
+  const beteiligtenHinzufuegen = (objektIdFuer, neuer) => {
+    const bisherige = beteiligteFuer(objektIdFuer).map((b) =>
+      neuer.hauptansprechpartner && b.rolle === neuer.rolle ? { ...b, hauptansprechpartner: false } : b
+    );
+    setBeteiligte({ ...beteiligte, [objektIdFuer]: [...bisherige, neuer] });
+  };
+  const beteiligtenEntfernen = (objektIdFuer, beteiligterId) => {
+    setBeteiligte({ ...beteiligte, [objektIdFuer]: beteiligteFuer(objektIdFuer).filter((b) => b.id !== beteiligterId) });
   };
 
   const cfVorSteuernNum = objekteListe.reduce((sum, o) => sum + parseEur(o.fin.cfm.value), 0);
@@ -361,9 +373,15 @@ export default function ImmoradarPrototype({ onLogout, userEmail }) {
                   <div className="bereich-kopf">
                     <div>
                       <h2>Organisatorisches</h2>
-                      <p>Steuersatz und Objektverwaltung</p>
+                      <p>Beteiligte, Steuersatz und Objektverwaltung</p>
                     </div>
                   </div>
+                  <BeteiligtePanel
+                    liste={beteiligteFuer(objekt.id)}
+                    mieter={objekt.miet.mieter}
+                    onAdd={(b) => beteiligtenHinzufuegen(objekt.id, b)}
+                    onRemove={(id) => beteiligtenEntfernen(objekt.id, id)}
+                  />
                   <Panel title="Steuersatz" sub="Wird für den Cashflow nach Steuern im Dashboard verwendet">
                     <label className="field inline">
                       <span>Persönlicher Steuersatz für dieses Objekt</span>
