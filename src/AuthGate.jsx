@@ -35,7 +35,7 @@ export default function AuthGate() {
   }
 
   if (session) {
-    return <App onLogout={logout} userEmail={session.user.email} />;
+    return <App onLogout={logout} userEmail={session.user.email} userName={session.user.user_metadata?.name} />;
   }
 
   return screen === "login"

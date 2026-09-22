@@ -14,7 +14,7 @@ import {
   AnpassenButton, AnpassenSheet, MietVergleich, DokumentAnsicht, EnergieAusweis, VermoegenChart, BeteiligtePanel,
 } from "./components/Bausteine.jsx";
 
-export default function ImmoradarPrototype({ onLogout, userEmail }) {
+export default function ImmoradarPrototype({ onLogout, userEmail, userName }) {
   const [tab, setTab] = useState("dashboard");
   const [objektId, setObjektId] = useState(null);
   const [sektion, setSektion] = useState("finanzen");
@@ -29,7 +29,13 @@ export default function ImmoradarPrototype({ onLogout, userEmail }) {
   const [objekteListe, setObjekteListe] = useState(OBJEKTE);
   const [steuersatz, setSteuersatz] = useState({}); // je Objekt-ID, Fallback STEUERSATZ_DEFAULT
   const [loeschenBestaetigen, setLoeschenBestaetigen] = useState(false);
+  const [loeschenGrund, setLoeschenGrund] = useState("verkauft");
+  const [verkaufsdatum, setVerkaufsdatum] = useState("");
+  const [verkaufspreis, setVerkaufspreis] = useState("");
+  const [verkaufsHistorie, setVerkaufsHistorie] = useState([]);
   const [beteiligte, setBeteiligte] = useState({}); // je Objekt-ID: Array von Beteiligten
+  const [kpiDrag, setKpiDrag] = useState(null); // { key, idx }
+  const [kpiOver, setKpiOver] = useState(null); // { key, idx }
 
   // Personalisierung
   const [dashKpis, setDashKpis] = useState(DASH_DEFAULT);
@@ -62,11 +68,45 @@ export default function ImmoradarPrototype({ onLogout, userEmail }) {
   const steuersatzFuer = (id) => steuersatz[id] ?? STEUERSATZ_DEFAULT;
   const setSteuersatzFuer = (id, wert) => setSteuersatz({ ...steuersatz, [id]: wert });
 
-  const objektLoeschen = (id) => {
-    setObjekteListe(objekteListe.filter((o) => o.id !== id));
+  const oeffneLoeschen = () => {
+    setLoeschenGrund("verkauft");
+    setVerkaufsdatum("");
+    setVerkaufspreis("");
+    setLoeschenBestaetigen(true);
+  };
+  const loeschenMoeglich = loeschenGrund !== "verkauft" || (!!verkaufsdatum && !!verkaufspreis);
+  const objektLoeschen = (o) => {
+    if (loeschenGrund === "verkauft") {
+      setVerkaufsHistorie([...verkaufsHistorie, {
+        objektId: o.id, name: o.name, datum: verkaufsdatum, preis: Number(verkaufspreis) || 0,
+      }]);
+    }
+    setObjekteListe(objekteListe.filter((x) => x.id !== o.id));
     setLoeschenBestaetigen(false);
     setObjektId(null);
   };
+
+  // Drag & Drop für Kennzahlen-Kacheln (Dashboard, Finanzen, Mieter, Technik)
+  const kpiListen = { dash: [dashKpis, setDashKpis], fin: [finKpis, setFinKpis], miet: [mietKpis, setMietKpis], tech: [techKpis, setTechKpis] };
+  const kpiDragProps = (key, idx) => ({
+    draggable: true,
+    onDragStart: () => setKpiDrag({ key, idx }),
+    onDragOver: (e) => { e.preventDefault(); setKpiOver({ key, idx }); },
+    onDrop: (e) => {
+      e.preventDefault();
+      setKpiOver(null);
+      if (!kpiDrag || kpiDrag.key !== key || kpiDrag.idx === idx) return;
+      const [liste, setListe] = kpiListen[key];
+      const next = [...liste];
+      const [verschoben] = next.splice(kpiDrag.idx, 1);
+      next.splice(idx, 0, verschoben);
+      setListe(next);
+      setKpiDrag(null);
+    },
+    onDragEnd: () => { setKpiDrag(null); setKpiOver(null); },
+    dragging: kpiDrag?.key === key && kpiDrag?.idx === idx,
+    dragOver: kpiOver?.key === key && kpiOver?.idx === idx && !(kpiDrag?.key === key && kpiDrag?.idx === idx),
+  });
 
   const beteiligteFuer = (id) => beteiligte[id] || [];
   const beteiligtenHinzufuegen = (objektIdFuer, neuer) => {
@@ -161,12 +201,14 @@ export default function ImmoradarPrototype({ onLogout, userEmail }) {
     return "";
   };
 
+  const vorname = userName ? userName.trim().split(" ")[0] : null;
+
   const titel = knoten ? knotenTitel()
     : objekt ? objekt.name
     : setting ? setting.title
     : anfrage ? "Anfrage starten"
     : faq ? faq.title
-    : tab === "dashboard" ? "Dashboard"
+    : tab === "dashboard" ? (vorname ? "Willkommen, " + vorname + "!" : "Dashboard")
     : tab === "support" ? "Support und Suche"
     : "Einstellungen";
 
@@ -211,9 +253,9 @@ export default function ImmoradarPrototype({ onLogout, userEmail }) {
           {tab === "dashboard" && !objekt && (
             <>
               <div className="kpi-grid">
-                {dashKpis.map((id) => {
+                {dashKpis.map((id, i) => {
                   const k = DASH_KATALOG.find((x) => x.id === id);
-                  return k ? <KpiCard key={id} label={k.label} value={k.value} note={k.note} /> : null;
+                  return k ? <KpiCard key={id} label={k.label} value={k.value} note={k.note} {...kpiDragProps("dash", i)} /> : null;
                 })}
               </div>
 
@@ -276,7 +318,7 @@ export default function ImmoradarPrototype({ onLogout, userEmail }) {
                     <AnpassenButton onClick={() => setAnpassen("fin")} />
                   </div>
                   <div className="kpi-grid">
-                    {finKpis.map((id) => <KpiCard key={id} {...finKarte(id)} />)}
+                    {finKpis.map((id, i) => <KpiCard key={id} {...finKarte(id)} {...kpiDragProps("fin", i)} />)}
                   </div>
                   <Panel title="Finanzierung" sub="Darlehen und Konditionen">
                     <DataRows rows={objekt.fin.darlehen} />
@@ -295,7 +337,7 @@ export default function ImmoradarPrototype({ onLogout, userEmail }) {
                     <AnpassenButton onClick={() => setAnpassen("miet")} />
                   </div>
                   <div className="kpi-grid">
-                    {mietKpis.map((id) => <KpiCard key={id} {...mietKarte(id)} />)}
+                    {mietKpis.map((id, i) => <KpiCard key={id} {...mietKarte(id)} {...kpiDragProps("miet", i)} />)}
                   </div>
                   <Panel title="Ist-Miete gegenüber Marktmiete" sub="Vergleichswert für das gesamte Objekt" action={<span className="premium">Premium</span>}>
                     <MietVergleich v={objekt.miet.vergleich} />
@@ -329,7 +371,7 @@ export default function ImmoradarPrototype({ onLogout, userEmail }) {
                     <AnpassenButton onClick={() => setAnpassen("tech")} />
                   </div>
                   <div className="kpi-grid">
-                    {techKpis.map((id) => <KpiCard key={id} {...techKarte(id)} />)}
+                    {techKpis.map((id, i) => <KpiCard key={id} {...techKarte(id)} {...kpiDragProps("tech", i)} />)}
                   </div>
                   <Panel title="Zustand und Maßnahmen" sub="Nach Gewerk, mit Handlungsbedarf">
                     <div className="list">
@@ -398,7 +440,7 @@ export default function ImmoradarPrototype({ onLogout, userEmail }) {
                   </Panel>
                   <Panel title="Objekt verwalten">
                     <p className="prose">Objektstammdaten wie Name, Adresse und Objekttyp können im Prototyp aktuell nicht bearbeitet werden.</p>
-                    <button className="ghost danger" onClick={() => setLoeschenBestaetigen(true)}>
+                    <button className="ghost danger" onClick={oeffneLoeschen}>
                       <Ico.trash /> Objekt löschen
                     </button>
                   </Panel>
@@ -793,12 +835,34 @@ export default function ImmoradarPrototype({ onLogout, userEmail }) {
         <div className="overlay" onClick={() => setLoeschenBestaetigen(false)}>
           <div className="sheet" onClick={(e) => e.stopPropagation()}>
             <div className="sheet-head">
-              <h3>Objekt löschen</h3>
+              <h3>Objekt entfernen</h3>
               <button className="iconbtn sm" onClick={() => setLoeschenBestaetigen(false)} aria-label="Schließen"><Ico.close /></button>
             </div>
-            <p className="sheet-sub">Möchten Sie „{objekt.name}“ wirklich löschen? Diese Aktion kann im Prototyp nicht rückgängig gemacht werden.</p>
+            <p className="sheet-sub">Warum möchten Sie „{objekt.name}“ entfernen? Diese Aktion kann im Prototyp nicht rückgängig gemacht werden.</p>
+
+            <div className="field">
+              <span>Grund</span>
+              <div className="type-chips">
+                <button type="button" className={"type-chip" + (loeschenGrund === "verkauft" ? " on" : "")} onClick={() => setLoeschenGrund("verkauft")}>Verkauft</button>
+                <button type="button" className={"type-chip" + (loeschenGrund === "sonstiges" ? " on" : "")} onClick={() => setLoeschenGrund("sonstiges")}>Sonstiger Grund</button>
+              </div>
+            </div>
+
+            {loeschenGrund === "verkauft" && (
+              <div className="two-col">
+                <label className="field">
+                  <span>Verkaufsdatum</span>
+                  <input type="date" value={verkaufsdatum} onChange={(e) => setVerkaufsdatum(e.target.value)} />
+                </label>
+                <label className="field">
+                  <span>Verkaufspreis</span>
+                  <input type="number" min="0" step="1000" value={verkaufspreis} onChange={(e) => setVerkaufspreis(e.target.value)} placeholder="z. B. 2100000" />
+                </label>
+              </div>
+            )}
+
             <div className="form-actions">
-              <button className="primary danger" onClick={() => objektLoeschen(objekt.id)}><Ico.trash /> Endgültig löschen</button>
+              <button className="primary danger" onClick={() => objektLoeschen(objekt)} disabled={!loeschenMoeglich}><Ico.trash /> Objekt entfernen</button>
               <button className="ghost" onClick={() => setLoeschenBestaetigen(false)}>Abbrechen</button>
             </div>
           </div>

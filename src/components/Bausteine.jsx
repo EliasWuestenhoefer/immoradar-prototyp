@@ -3,7 +3,7 @@ import { Ico, SECTION_ICON } from "./Icons.jsx";
 import { SEKTIONEN, BETEILIGTE_ROLLEN, KONTAKT_TYPEN } from "../data/kataloge.js";
 import { eur } from "../utils/format.js";
 
-export function KpiCard({ label, value, note, onClick, badge, control }) {
+export function KpiCard({ label, value, note, onClick, badge, control, draggable, onDragStart, onDragOver, onDrop, onDragEnd, dragging, dragOver }) {
   const inner = (
     <>
       <div className="kpi-top">
@@ -16,10 +16,12 @@ export function KpiCard({ label, value, note, onClick, badge, control }) {
       {onClick && <Ico.chevron className="kpi-chev" />}
     </>
   );
+  const cls = "kpi" + (onClick ? " klick" : "") + (dragging ? " dragging" : "") + (dragOver ? " drag-target" : "");
+  const dragProps = draggable ? { draggable: true, onDragStart, onDragOver, onDrop, onDragEnd } : {};
   return onClick ? (
-    <button className="kpi klick" onClick={onClick}>{inner}</button>
+    <button className={cls} onClick={onClick} {...dragProps}>{inner}</button>
   ) : (
-    <div className="kpi">{inner}</div>
+    <div className={cls} {...dragProps}>{inner}</div>
   );
 }
 
