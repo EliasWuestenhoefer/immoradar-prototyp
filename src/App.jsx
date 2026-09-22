@@ -1,16 +1,17 @@
 import { useState } from "react";
-import { eur } from "./utils/format.js";
+import { eur, parseEur } from "./utils/format.js";
 import { OBJEKTE, OBJEKTTYPEN } from "./data/objekte.js";
 import {
   DASH_KATALOG, DASH_DEFAULT, FIN_KATALOG, FIN_DEFAULT,
   MIET_KATALOG, MIET_DEFAULT, TECH_KATALOG, TECH_DEFAULT,
+  VERMOEGEN_VERLAUF, STEUERSATZ_DEFAULT,
 } from "./data/kataloge.js";
 import { FAQ, EINSTELLUNGEN, SUCHERGEBNISSE } from "./data/support.js";
 import { Ico } from "./components/Icons.jsx";
 import { ObjektBild } from "./components/ObjektBild.jsx";
 import {
   KpiCard, DataRows, Panel, ListRow, Segmented, ObjektTabs,
-  AnpassenButton, AnpassenSheet, MietVergleich, DokumentAnsicht, EnergieAusweis,
+  AnpassenButton, AnpassenSheet, MietVergleich, DokumentAnsicht, EnergieAusweis, VermoegenChart,
 } from "./components/Bausteine.jsx";
 
 export default function ImmoradarPrototype({ onLogout, userEmail }) {
@@ -25,6 +26,9 @@ export default function ImmoradarPrototype({ onLogout, userEmail }) {
   const [suche, setSuche] = useState("");
   const [neuesObjekt, setNeuesObjekt] = useState(false);
   const [neuTyp, setNeuTyp] = useState("Mehrfamilienhaus");
+  const [objekteListe, setObjekteListe] = useState(OBJEKTE);
+  const [steuersatz, setSteuersatz] = useState({}); // je Objekt-ID, Fallback STEUERSATZ_DEFAULT
+  const [loeschenBestaetigen, setLoeschenBestaetigen] = useState(false);
 
   // Personalisierung
   const [dashKpis, setDashKpis] = useState(DASH_DEFAULT);
@@ -37,7 +41,7 @@ export default function ImmoradarPrototype({ onLogout, userEmail }) {
   const [nuModus, setNuModus] = useState("monat");
   const [ihr, setIhr] = useState({ modus: "qm", qm: 15, fest: 9180, pct: 10 });
 
-  const objekt = OBJEKTE.find((o) => o.id === objektId) || null;
+  const objekt = objekteListe.find((o) => o.id === objektId) || null;
   const knoten = pfad.length ? pfad[pfad.length - 1] : null;
   const faq = faqId ? FAQ.find((f) => f.id === faqId) : null;
   const setting = settingsId ? EINSTELLUNGEN.flatMap((g) => g.items).find((s) => s.id === settingsId) : null;
@@ -53,6 +57,21 @@ export default function ImmoradarPrototype({ onLogout, userEmail }) {
     setTab(t); setObjektId(null); setPfad([]); setFaqId(null); setSettingsId(null); setAnfrage(false);
   };
   const wechsleSektion = (s) => { setSektion(s); setPfad([]); };
+
+  const steuersatzFuer = (id) => steuersatz[id] ?? STEUERSATZ_DEFAULT;
+  const setSteuersatzFuer = (id, wert) => setSteuersatz({ ...steuersatz, [id]: wert });
+
+  const objektLoeschen = (id) => {
+    setObjekteListe(objekteListe.filter((o) => o.id !== id));
+    setLoeschenBestaetigen(false);
+    setObjektId(null);
+  };
+
+  const cfVorSteuernNum = objekteListe.reduce((sum, o) => sum + parseEur(o.fin.cfm.value), 0);
+  const cfNachSteuernNum = objekteListe.reduce(
+    (sum, o) => sum + parseEur(o.fin.cfm.value) * (1 - steuersatzFuer(o.id) / 100),
+    0
+  );
 
   const kannZurueck = !!(pfad.length || objekt || faq || setting || anfrage);
   const zurueck = () => {
@@ -185,12 +204,28 @@ export default function ImmoradarPrototype({ onLogout, userEmail }) {
                   return k ? <KpiCard key={id} label={k.label} value={k.value} note={k.note} /> : null;
                 })}
               </div>
+
+              <Panel title="Vermögensentwicklung" sub="Marktwert abzüglich Restschuld · letzte 3 Jahre">
+                <div className="cf-row">
+                  <div>
+                    <span className="cf-label">Monatlicher Cashflow vor Steuern</span>
+                    <strong className="cf-value">{eur(Math.round(cfVorSteuernNum))}</strong>
+                  </div>
+                  <div>
+                    <span className="cf-label">Monatlicher Cashflow nach Steuern</span>
+                    <strong className="cf-value">{eur(Math.round(cfNachSteuernNum))}</strong>
+                  </div>
+                </div>
+                <VermoegenChart data={VERMOEGEN_VERLAUF} />
+                <p className="hint">Steuersätze werden je Objekt unter „Organisatorisches“ hinterlegt. Vereinfachte Annahme, ersetzt keine steuerliche Beratung.</p>
+              </Panel>
+
               <div className="section-title">
                 <h2>Objekte</h2>
-                <span>{OBJEKTE.length} Immobilien</span>
+                <span>{objekteListe.length} Immobilien</span>
               </div>
               <div className="obj-grid">
-                {OBJEKTE.map((o) => (
+                {objekteListe.map((o) => (
                   <button className="obj-card" key={o.id} onClick={() => openObjekt(o.id)}>
                     <ObjektBild type={o.type} />
                     <div className="obj-body">
@@ -316,6 +351,38 @@ export default function ImmoradarPrototype({ onLogout, userEmail }) {
                         />
                       ))}
                     </div>
+                  </Panel>
+                </>
+              )}
+
+              {/* -------- Organisatorisches -------- */}
+              {sektion === "organisatorisches" && (
+                <>
+                  <div className="bereich-kopf">
+                    <div>
+                      <h2>Organisatorisches</h2>
+                      <p>Steuersatz und Objektverwaltung</p>
+                    </div>
+                  </div>
+                  <Panel title="Steuersatz" sub="Wird für den Cashflow nach Steuern im Dashboard verwendet">
+                    <label className="field inline">
+                      <span>Persönlicher Steuersatz für dieses Objekt</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value={steuersatzFuer(objekt.id)}
+                        onChange={(e) => setSteuersatzFuer(objekt.id, Number(e.target.value) || 0)}
+                      />
+                    </label>
+                    <p className="hint">Vereinfachte Annahme: pauschaler Satz auf den Cashflow nach Kapitaldienst dieses Objekts. Ersetzt keine steuerliche Beratung.</p>
+                  </Panel>
+                  <Panel title="Objekt verwalten">
+                    <p className="prose">Objektstammdaten wie Name, Adresse und Objekttyp können im Prototyp aktuell nicht bearbeitet werden.</p>
+                    <button className="ghost danger" onClick={() => setLoeschenBestaetigen(true)}>
+                      <Ico.trash /> Objekt löschen
+                    </button>
                   </Panel>
                 </>
               )}
@@ -582,7 +649,7 @@ export default function ImmoradarPrototype({ onLogout, userEmail }) {
             </>
           )}
 
-          {tab === "support" && faq && (
+          {tab === "support" && faq && !anfrage && (
             <Panel title={faq.title} sub={faq.teaser}>
               <p className="prose">{faq.body}</p>
               <button className="ghost" onClick={() => setAnfrage(true)}>Frage nicht beantwortet? Anfrage starten</button>
@@ -596,7 +663,7 @@ export default function ImmoradarPrototype({ onLogout, userEmail }) {
                 <span>Objekt</span>
                 <select defaultValue="">
                   <option value="">Kein Objektbezug</option>
-                  {OBJEKTE.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+                  {objekteListe.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
                 </select>
               </label>
               <label className="field"><span>Beschreibung</span><textarea rows={5} placeholder="Was funktioniert nicht wie erwartet?" /></label>
@@ -699,6 +766,22 @@ export default function ImmoradarPrototype({ onLogout, userEmail }) {
             <div className="form-actions">
               <button className="primary" onClick={() => setNeuesObjekt(false)}>Objekt anlegen</button>
               <button className="ghost" onClick={() => setNeuesObjekt(false)}>Abbrechen</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {loeschenBestaetigen && objekt && (
+        <div className="overlay" onClick={() => setLoeschenBestaetigen(false)}>
+          <div className="sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="sheet-head">
+              <h3>Objekt löschen</h3>
+              <button className="iconbtn sm" onClick={() => setLoeschenBestaetigen(false)} aria-label="Schließen"><Ico.close /></button>
+            </div>
+            <p className="sheet-sub">Möchten Sie „{objekt.name}“ wirklich löschen? Diese Aktion kann im Prototyp nicht rückgängig gemacht werden.</p>
+            <div className="form-actions">
+              <button className="primary danger" onClick={() => objektLoeschen(objekt.id)}><Ico.trash /> Endgültig löschen</button>
+              <button className="ghost" onClick={() => setLoeschenBestaetigen(false)}>Abbrechen</button>
             </div>
           </div>
         </div>

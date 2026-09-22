@@ -17,5 +17,7 @@ export const Ico = {
   folder: (p) => (<svg viewBox="0 0 24 24" fill="none" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M3.5 6.5A1.5 1.5 0 0 1 5 5h4l2 2.5h8a1.5 1.5 0 0 1 1.5 1.5v8.5A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5z" /></svg>),
   bell: (p) => (<svg viewBox="0 0 24 24" fill="none" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M18 16V11a6 6 0 1 0-12 0v5l-1.5 2.5h15z" /><path d="M10 20.5h4" /></svg>),
   logout: (p) => (<svg viewBox="0 0 24 24" fill="none" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M14 4.5H7.5A1.5 1.5 0 0 0 6 6v12a1.5 1.5 0 0 0 1.5 1.5H14" /><path d="M10.5 12h10m0 0-3.5-3.5m3.5 3.5L17 15.5" /></svg>),
+  orga: (p) => (<svg viewBox="0 0 24 24" fill="none" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...p}><rect x="3.5" y="8" width="17" height="11" rx="1.8" /><path d="M8.5 8V6.5A1.5 1.5 0 0 1 10 5h4a1.5 1.5 0 0 1 1.5 1.5V8" /><path d="M3.5 12.5h17" /><path d="M10.3 12.5v1.6h3.4v-1.6" /></svg>),
+  trash: (p) => (<svg viewBox="0 0 24 24" fill="none" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M5 7h14" /><path d="M9.5 7V5.2A1.2 1.2 0 0 1 10.7 4h2.6a1.2 1.2 0 0 1 1.2 1.2V7" /><path d="M7 7l.8 12a1.5 1.5 0 0 0 1.5 1.4h5.4a1.5 1.5 0 0 0 1.5-1.4L17 7" /><path d="M10.3 11v6M13.7 11v6" /></svg>),
 };
-export const SECTION_ICON = { finanzen: Ico.finanzen, mieter: Ico.mieter, technik: Ico.technik };
+export const SECTION_ICON = { finanzen: Ico.finanzen, mieter: Ico.mieter, technik: Ico.technik, organisatorisches: Ico.orga };

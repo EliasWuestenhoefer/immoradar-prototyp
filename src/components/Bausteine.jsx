@@ -1,5 +1,6 @@
 import { Ico, SECTION_ICON } from "./Icons.jsx";
 import { SEKTIONEN } from "../data/kataloge.js";
+import { eur } from "../utils/format.js";
 
 export function KpiCard({ label, value, note, onClick, badge, control }) {
   const inner = (
@@ -80,7 +81,7 @@ export function Segmented({ items, value, onChange, small }) {
 export function ObjektTabs({ value, onChange }) {
   const i = SEKTIONEN.findIndex((s) => s.id === value);
   return (
-    <nav className="tabsA" style={{ "--i": i }} aria-label="Objektbereiche">
+    <nav className="tabsA" style={{ "--i": i, "--n": SEKTIONEN.length }} aria-label="Objektbereiche">
       <span className="tabsA-ind" />
       {SEKTIONEN.map((s) => {
         const Icon = SECTION_ICON[s.id];
@@ -236,5 +237,49 @@ export function EnergieAusweis({ a }) {
       </div>
       <DokumentAnsicht name="Energieausweis.pdf" kontext="Hinterlegtes Dokument, simulierte Ansicht" />
     </>
+  );
+}
+
+/* Vermögensentwicklung – Marktwert abzüglich Restschuld über mehrere Jahre */
+export function VermoegenChart({ data }) {
+  const werte = data.map((d) => d.wert);
+  const max = Math.max(...werte);
+  const min = Math.min(...werte);
+  const spanTop = max + (max - min || max) * 0.2;
+  const spanBottom = Math.max(0, min - (max - min || max) * 0.2);
+
+  const W = 760, H = 200, PAD_L = 74, PAD_R = 26, PAD_T = 16, PAD_B = 28;
+  const plotW = W - PAD_L - PAD_R;
+  const plotH = H - PAD_T - PAD_B;
+  const x = (i) => PAD_L + (data.length === 1 ? plotW / 2 : (i / (data.length - 1)) * plotW);
+  const y = (v) => PAD_T + (1 - (v - spanBottom) / (spanTop - spanBottom || 1)) * plotH;
+
+  const linePoints = data.map((d, i) => `${x(i)},${y(d.wert)}`).join(" ");
+  const areaPoints = `${x(0)},${y(spanBottom)} ${linePoints} ${x(data.length - 1)},${y(spanBottom)}`;
+  const gridVals = [spanTop, spanBottom + (spanTop - spanBottom) / 2, spanBottom];
+
+  return (
+    <svg className="vermoegen-chart" viewBox={`0 0 ${W} ${H}`} width="100%" height="220" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="vermoegenFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#1E2E45" stopOpacity="0.18" />
+          <stop offset="100%" stopColor="#1E2E45" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {gridVals.map((v, i) => (
+        <g key={i}>
+          <line x1={PAD_L} y1={y(v)} x2={W - PAD_R} y2={y(v)} stroke="#E3E2DC" strokeWidth="1" />
+          <text x={PAD_L - 10} y={y(v) + 4} textAnchor="end" fontSize="11" fill="#6C7178">{eur(Math.round(v))}</text>
+        </g>
+      ))}
+      <polygon points={areaPoints} fill="url(#vermoegenFill)" />
+      <polyline points={linePoints} fill="none" stroke="#1E2E45" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+      {data.map((d, i) => (
+        <circle key={d.label} cx={x(i)} cy={y(d.wert)} r={i === data.length - 1 ? 5 : 3.5} fill={i === data.length - 1 ? "#B79561" : "#1E2E45"} />
+      ))}
+      {data.map((d, i) => (
+        <text key={d.label} x={x(i)} y={H - 6} textAnchor="middle" fontSize="12" fill="#6C7178">{d.label}</text>
+      ))}
+    </svg>
   );
 }

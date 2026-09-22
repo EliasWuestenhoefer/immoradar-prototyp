@@ -64,4 +64,16 @@ export const SEKTIONEN = [
   { id: "finanzen", label: "Finanzen" },
   { id: "mieter", label: "Mieter" },
   { id: "technik", label: "Technik" },
+  { id: "organisatorisches", label: "Organisatorisches" },
 ];
+
+// Vermögensentwicklung Portfolio (Marktwert abzüglich Restschuld), letzte 3 Jahre.
+// Aktueller Wert (2026) ergibt sich exakt aus den Objektdaten: 5.335.000 € − 2.737.400 € = 2.597.600 €.
+export const VERMOEGEN_VERLAUF = [
+  { label: "2023", wert: 2180000 },
+  { label: "2024", wert: 2340000 },
+  { label: "2025", wert: 2480000 },
+  { label: "2026", wert: 2597600 },
+];
+
+export const STEUERSATZ_DEFAULT = 42;
