@@ -277,6 +277,8 @@ button.primary:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:
 .beteiligte-empty p{font-size:13.5px;line-height:1.55;max-width:42ch;margin:0 auto;}
 .beteiligter-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 4px;border-bottom:1px solid var(--line);}
 .beteiligter-row:last-child{border-bottom:none;}
+.kontakt-row{display:flex;gap:10px;align-items:center;}
+.kontakt-row select{flex:1;}
 .beteiligter-main{display:flex;flex-direction:column;gap:4px;min-width:0;}
 .beteiligter-name{font-size:15px;font-weight:500;}
 .beteiligter-meta{font-size:12.5px;color:var(--muted);}

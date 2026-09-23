@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { eur, parseEur } from "./utils/format.js";
 import { OBJEKTE, OBJEKTTYPEN } from "./data/objekte.js";
 import {
@@ -229,6 +229,10 @@ export default function ImmoradarPrototype({ onLogout, userEmail, userName }) {
 
   const viewKey = [tab, objektId, sektion, pfad.map((p) => p.type + (p.id || p.name || "")).join(">"), faqId, settingsId, anfrage, supportView].join("|");
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [viewKey]);
+
   const treffer = SUCHERGEBNISSE.filter((r) =>
     suche.trim() ? (r.title + " " + r.meta + " " + r.kind).toLowerCase().includes(suche.trim().toLowerCase()) : true
   );
@@ -431,7 +435,6 @@ export default function ImmoradarPrototype({ onLogout, userEmail, userName }) {
                   </div>
                   <BeteiligtePanel
                     liste={beteiligteFuer(objekt.id)}
-                    mieter={objekt.miet.mieter}
                     onAdd={(b) => beteiligtenHinzufuegen(objekt.id, b)}
                     onRemove={(id) => beteiligtenEntfernen(objekt.id, id)}
                   />
@@ -877,7 +880,7 @@ export default function ImmoradarPrototype({ onLogout, userEmail, userName }) {
                     <input type="number" min="0" step="1000" value={restschuldVerkauf} onChange={(e) => setRestschuldVerkauf(e.target.value)} placeholder="z. B. 430000" />
                   </label>
                   <label className="field">
-                    <span>Verkaufsnebenkosten (Makler, Notar)</span>
+                    <span>Verkaufsnebenkosten</span>
                     <input type="number" min="0" step="500" value={verkaufsnebenkosten} onChange={(e) => setVerkaufsnebenkosten(e.target.value)} placeholder="z. B. 25000" />
                   </label>
                 </div>

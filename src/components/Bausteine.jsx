@@ -307,7 +307,7 @@ export function VermoegenChart({ data }) {
 }
 
 /* Beteiligte je Objekt */
-export function BeteiligtePanel({ liste, mieter, onAdd, onRemove }) {
+export function BeteiligtePanel({ liste, onAdd, onRemove }) {
   const [sheetOffen, setSheetOffen] = useState(false);
 
   return (
@@ -328,13 +328,12 @@ export function BeteiligtePanel({ liste, mieter, onAdd, onRemove }) {
             <div className="beteiligter-row" key={b.id}>
               <div className="beteiligter-main">
                 <span className="beteiligter-name">
-                  {b.name}
+                  {b.rolle}
                   {b.hauptansprechpartner && <span className="premium" style={{ marginLeft: 8 }}>Hauptansprechpartner</span>}
                 </span>
                 <span className="beteiligter-meta">
-                  {b.rolle} · {b.kontaktTyp}
-                  {(b.gueltigAb || b.gueltigBis) ? ` · gültig ${b.gueltigAb || "…"} – ${b.gueltigBis || "…"}` : ""}
-                  {b.hinweis ? ` · ${b.hinweis}` : ""}
+                  {(b.gueltigAb || b.gueltigBis) ? `gültig ${b.gueltigAb || "…"} – ${b.gueltigBis || "…"}` : ""}
+                  {b.hinweis ? `${(b.gueltigAb || b.gueltigBis) ? " · " : ""}${b.hinweis}` : ""}
                 </span>
               </div>
               <button className="iconbtn sm" onClick={() => onRemove(b.id)} aria-label="Beteiligten entfernen"><Ico.trash /></button>
@@ -344,34 +343,29 @@ export function BeteiligtePanel({ liste, mieter, onAdd, onRemove }) {
       )}
 
       {sheetOffen && (
-        <BeteiligtenSheet mieter={mieter} onClose={() => setSheetOffen(false)} onSave={(b) => { onAdd(b); setSheetOffen(false); }} />
+        <BeteiligtenSheet onClose={() => setSheetOffen(false)} onSave={(b) => { onAdd(b); setSheetOffen(false); }} />
       )}
     </Panel>
   );
 }
 
-function BeteiligtenSheet({ mieter, onClose, onSave }) {
-  const [kontaktTyp, setKontaktTyp] = useState(KONTAKT_TYPEN[0]);
-  const [mieterId, setMieterId] = useState("");
-  const [name, setName] = useState("");
-  const [rolle, setRolle] = useState(BETEILIGTE_ROLLEN[0]);
+const BETEILIGTE_ROLLEN_ALLE = [...BETEILIGTE_ROLLEN, ...KONTAKT_TYPEN];
+
+function BeteiligtenSheet({ onClose, onSave }) {
+  const [kontaktId, setKontaktId] = useState("");
+  const [rolle, setRolle] = useState(BETEILIGTE_ROLLEN_ALLE[0]);
   const [hinweis, setHinweis] = useState("");
   const [gueltigAb, setGueltigAb] = useState("");
   const [gueltigBis, setGueltigBis] = useState("");
   const [hauptansprechpartner, setHauptansprechpartner] = useState(false);
 
-  const istMieterTyp = kontaktTyp === "Mieter";
-  const nameGueltig = istMieterTyp ? !!mieterId : name.trim().length > 0;
-
-  const wechsleKontaktTyp = (t) => { setKontaktTyp(t); setMieterId(""); setName(""); };
+  const speichernMoeglich = !!kontaktId;
 
   const speichern = () => {
-    if (!nameGueltig) return;
-    const finalName = istMieterTyp ? (mieter.find((m) => m.id === mieterId)?.name || "") : name.trim();
+    if (!speichernMoeglich) return;
     onSave({
       id: Date.now().toString(36),
-      kontaktTyp,
-      name: finalName,
+      kontaktId,
       rolle,
       hinweis: hinweis.trim(),
       gueltigAb,
@@ -388,32 +382,22 @@ function BeteiligtenSheet({ mieter, onClose, onSave }) {
           <button className="iconbtn sm" onClick={onClose} aria-label="Schließen"><Ico.close /></button>
         </div>
 
-        <label className="field">
-          <span>Kontaktart *</span>
-          <select value={kontaktTyp} onChange={(e) => wechsleKontaktTyp(e.target.value)}>
-            {KONTAKT_TYPEN.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
-        </label>
-
-        {istMieterTyp ? (
-          <label className="field">
-            <span>Mieter *</span>
-            <select value={mieterId} onChange={(e) => setMieterId(e.target.value)}>
-              <option value="">Bitte wählen</option>
-              {mieter.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+        <div className="field">
+          <span>Kontakt *</span>
+          <div className="kontakt-row">
+            <select value={kontaktId} onChange={(e) => setKontaktId(e.target.value)}>
+              <option value="">Noch kein Kontakt hinzugefügt</option>
             </select>
-          </label>
-        ) : (
-          <label className="field">
-            <span>Name *</span>
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name oder Firma" />
-          </label>
-        )}
+            <button type="button" className="iconbtn" onClick={() => {}} aria-label="Kontakt anlegen" title="Kontakt anlegen">
+              <Ico.plus />
+            </button>
+          </div>
+        </div>
 
         <label className="field">
           <span>Rolle *</span>
           <select value={rolle} onChange={(e) => setRolle(e.target.value)}>
-            {BETEILIGTE_ROLLEN.map((r) => <option key={r} value={r}>{r}</option>)}
+            {BETEILIGTE_ROLLEN_ALLE.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
         </label>
 
@@ -446,7 +430,7 @@ function BeteiligtenSheet({ mieter, onClose, onSave }) {
         </div>
 
         <div className="form-actions">
-          <button className="primary" onClick={speichern} disabled={!nameGueltig}>Speichern</button>
+          <button className="primary" onClick={speichern} disabled={!speichernMoeglich}>Speichern</button>
           <button className="ghost" onClick={onClose}>Abbrechen</button>
         </div>
       </div>
