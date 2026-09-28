@@ -1,3 +1,91 @@
+import { eur } from "../utils/format.js";
+
+function kaufdatumText(d) {
+  if (!d) return null;
+  const [y, m, tag] = d.split("-");
+  return y && m && tag ? `${tag}.${m}.${y}` : d;
+}
+
+// Erzeugt ein neu angelegtes Objekt mit sicheren Platzhaltern für alle
+// Kennzahlen, die noch nicht manuell erfasst oder per Dokument importiert wurden.
+// Ohne diese Platzhalter würden Finanzen-/Mieter-/Technik-Ansichten und die
+// Dashboard-Summen (die über alle Objekte iterieren) auf fehlende Felder crashen.
+export function erstelleObjekt({ id, name, street, type, kaufpreis, kaufdatum, flaeche, einheiten, baujahr, dateien }) {
+  const flaecheNum = Number(flaeche) || 0;
+  const einheitenNum = Number(einheiten) || 0;
+  const kaufpreisNum = Number(kaufpreis) || 0;
+  const kaufpreisText = kaufpreisNum ? eur(kaufpreisNum) : "–";
+  const baujahrText = baujahr ? String(baujahr) : "–";
+  const flaecheText = flaecheNum ? flaecheNum.toLocaleString("de-DE") + " m²" : "–";
+  const platzhalter = (note = "Noch keine Angabe") => ({ value: "–", note });
+
+  const subTeile = [
+    einheitenNum ? einheitenNum + (einheitenNum === 1 ? " Wohneinheit" : " Wohneinheiten") : null,
+    flaecheNum ? flaecheText + " Wohnfläche" : null,
+    baujahr ? "Baujahr " + baujahrText : null,
+  ].filter(Boolean);
+
+  return {
+    id,
+    name,
+    street,
+    type,
+    sub: subTeile.length ? subTeile.join(" · ") : "Noch keine Angaben erfasst",
+    flaecheNum,
+    jnkmNum: 0,
+    dateien: dateien || [],
+    fin: {
+      ankaufskosten: { value: kaufpreisText, note: kaufdatum ? "Kaufdatum " + kaufdatumText(kaufdatum) : "Noch keine Angabe" },
+      marktwert: { value: kaufpreisText, note: "Entspricht dem Kaufpreis, noch keine Bewertung hinterlegt" },
+      eigenkapital: platzhalter(),
+      restschuld: platzhalter(),
+      ltv: platzhalter(),
+      ltvNum: 0,
+      dscr: platzhalter(),
+      ekrendite: platzhalter(),
+      brutto: platzhalter(),
+      netto: platzhalter(),
+      cfm: { value: "0 €", note: "Noch keine Angabe" },
+      cfj: { value: "0 €", note: "Noch keine Angabe" },
+      nichtumlage: { monat: "0 €", jahr: "0 €", note: "Noch keine Angabe" },
+      zins: platzhalter(),
+      zinsbindung: platzhalter(),
+      afa: platzhalter(),
+      darlehen: [],
+      tilgung: [],
+      ekVerlauf: [],
+    },
+    miet: {
+      jnkm: platzhalter(),
+      monatlich: platzhalter(),
+      nkvz: platzhalter(),
+      wault: platzhalter(),
+      leerstand: { value: "–", note: "Noch keine Mietverhältnisse erfasst" },
+      mieteqm: platzhalter(),
+      flaeche: { value: flaecheText, note: einheitenNum ? einheitenNum + (einheitenNum === 1 ? " Einheit" : " Einheiten") : "Noch keine Angabe" },
+      potenzial: platzhalter(),
+      einheiten: { value: einheitenNum ? "0 / " + einheitenNum : "–", note: "vermietet / gesamt" },
+      vergleich: { ist: 0, markt: 0, delta: "–" },
+      leerstandDetail: { rows: [], note: "Noch keine Mietverhältnisse erfasst." },
+      mieter: [],
+    },
+    tech: {
+      baujahr: { value: baujahrText, note: "Noch keine weitere Angabe" },
+      wohnflaeche: { value: flaecheText, note: einheitenNum ? einheitenNum + (einheitenNum === 1 ? " Einheit" : " Einheiten") : "Noch keine Angabe" },
+      grundstueck: platzhalter(),
+      sanierung: platzhalter(),
+      heizung: platzhalter(),
+      energie: platzhalter(),
+      rnd: platzhalter(),
+      naechste: platzhalter(),
+      capex: platzhalter(),
+      ausweis: { klasse: "–", wert: "–", rows: [] },
+      zustand: [],
+      revision: [],
+    },
+  };
+}
+
 export const OBJEKTE = [
   {
     id: "beethoven",

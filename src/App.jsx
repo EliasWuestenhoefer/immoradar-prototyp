@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { eur, parseEur } from "./utils/format.js";
-import { OBJEKTE, OBJEKTTYPEN } from "./data/objekte.js";
+import { OBJEKTE, OBJEKTTYPEN, erstelleObjekt } from "./data/objekte.js";
 import {
   DASH_KATALOG, DASH_DEFAULT, FIN_KATALOG, FIN_DEFAULT,
   MIET_KATALOG, MIET_DEFAULT, TECH_KATALOG, TECH_DEFAULT,
@@ -26,6 +26,15 @@ export default function ImmoradarPrototype({ onLogout, userEmail, userName }) {
   const [suche, setSuche] = useState("");
   const [neuesObjekt, setNeuesObjekt] = useState(false);
   const [neuTyp, setNeuTyp] = useState("Mehrfamilienhaus");
+  const [neuName, setNeuName] = useState("");
+  const [neuAdresse, setNeuAdresse] = useState("");
+  const [neuKaufpreis, setNeuKaufpreis] = useState("");
+  const [neuKaufdatum, setNeuKaufdatum] = useState("");
+  const [neuFlaeche, setNeuFlaeche] = useState("");
+  const [neuEinheiten, setNeuEinheiten] = useState("");
+  const [neuBaujahr, setNeuBaujahr] = useState("");
+  const [neuDateien, setNeuDateien] = useState([]); // [{ name, groesse }]
+  const [neuDropAktiv, setNeuDropAktiv] = useState(false);
   const [objekteListe, setObjekteListe] = useState(OBJEKTE);
   const [steuersatz, setSteuersatz] = useState({}); // je Objekt-ID, Fallback STEUERSATZ_DEFAULT
   const [loeschenBestaetigen, setLoeschenBestaetigen] = useState(false);
@@ -96,6 +105,41 @@ export default function ImmoradarPrototype({ onLogout, userEmail, userName }) {
     setObjekteListe(objekteListe.filter((x) => x.id !== o.id));
     setLoeschenBestaetigen(false);
     setObjektId(null);
+  };
+
+  // Neues Objekt anlegen
+  const neuZuruecksetzen = () => {
+    setNeuName(""); setNeuAdresse(""); setNeuTyp("Mehrfamilienhaus");
+    setNeuKaufpreis(""); setNeuKaufdatum(""); setNeuFlaeche(""); setNeuEinheiten(""); setNeuBaujahr("");
+    setNeuDateien([]); setNeuDropAktiv(false);
+  };
+  const neuSchliessen = () => { setNeuesObjekt(false); neuZuruecksetzen(); };
+  const neuIdVergeben = (name) => {
+    const basis = name.trim().toLowerCase()
+      .normalize("NFD").replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "objekt";
+    let id = basis;
+    let n = 2;
+    while (objekteListe.some((o) => o.id === id)) { id = basis + "-" + n; n += 1; }
+    return id;
+  };
+  const objektAnlegenMoeglich = neuName.trim().length > 0 && neuAdresse.trim().length > 0;
+  const neuDateienHinzufuegen = (fileList) => {
+    const neue = Array.from(fileList).map((f) => ({ name: f.name, groesse: f.size }));
+    setNeuDateien((bisherige) => [...bisherige, ...neue]);
+  };
+  const objektAnlegen = () => {
+    if (!objektAnlegenMoeglich) return;
+    const id = neuIdVergeben(neuName);
+    const neu = erstelleObjekt({
+      id, name: neuName.trim(), street: neuAdresse.trim(), type: neuTyp,
+      kaufpreis: neuKaufpreis, kaufdatum: neuKaufdatum, flaeche: neuFlaeche, einheiten: neuEinheiten, baujahr: neuBaujahr,
+      dateien: neuDateien,
+    });
+    setObjekteListe((liste) => [...liste, neu]);
+    neuZuruecksetzen();
+    setNeuesObjekt(false);
+    openObjekt(id);
   };
 
   // Drag & Drop für Kennzahlen-Kacheln (Dashboard, Finanzen, Mieter, Technik)
@@ -841,25 +885,79 @@ export default function ImmoradarPrototype({ onLogout, userEmail, userName }) {
       )}
 
       {neuesObjekt && (
-        <div className="overlay" onClick={() => setNeuesObjekt(false)}>
-          <div className="sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="overlay" onClick={neuSchliessen}>
+          <div className="sheet wide" onClick={(e) => e.stopPropagation()}>
             <div className="sheet-head">
               <h3>Neues Objekt</h3>
-              <button className="iconbtn sm" onClick={() => setNeuesObjekt(false)} aria-label="Schließen"><Ico.close /></button>
+              <button className="iconbtn sm" onClick={neuSchliessen} aria-label="Schließen"><Ico.close /></button>
             </div>
-            <label className="field"><span>Objektname</span><input placeholder="z. B. Beethovenstraße 4" /></label>
-            <label className="field"><span>Adresse</span><input placeholder="Straße, PLZ, Ort" /></label>
+            <label className="field"><span>Objektname *</span><input value={neuName} onChange={(e) => setNeuName(e.target.value)} placeholder="z. B. Beethovenstraße 4" /></label>
+            <label className="field"><span>Adresse *</span><input value={neuAdresse} onChange={(e) => setNeuAdresse(e.target.value)} placeholder="Straße, PLZ, Ort" /></label>
             <div className="field">
-              <span>Objekttyp</span>
+              <span>Objekttyp *</span>
               <div className="type-chips">
                 {OBJEKTTYPEN.map((t) => (
                   <button key={t} className={"type-chip" + (neuTyp === t ? " on" : "")} onClick={() => setNeuTyp(t)}>{t}</button>
                 ))}
               </div>
             </div>
+
+            <div className="field-divider" />
+            <p className="hint" style={{ marginTop: -8, marginBottom: 18 }}>
+              Die folgenden Angaben sind optional und können auch später in den Objekt-Reitern ergänzt werden.
+            </p>
+
+            <div className="two-col">
+              <label className="field"><span>Kaufpreis</span><input type="number" min="0" step="1000" value={neuKaufpreis} onChange={(e) => setNeuKaufpreis(e.target.value)} placeholder="z. B. 650000" /></label>
+              <label className="field"><span>Kaufdatum</span><input type="date" value={neuKaufdatum} onChange={(e) => setNeuKaufdatum(e.target.value)} /></label>
+            </div>
+            <div className="two-col">
+              <label className="field"><span>Wohn-/Nutzfläche (m²)</span><input type="number" min="0" step="1" value={neuFlaeche} onChange={(e) => setNeuFlaeche(e.target.value)} placeholder="z. B. 148" /></label>
+              <label className="field"><span>Anzahl Einheiten</span><input type="number" min="0" step="1" value={neuEinheiten} onChange={(e) => setNeuEinheiten(e.target.value)} placeholder="z. B. 1" /></label>
+            </div>
+            <label className="field inline"><span>Baujahr</span><input type="number" min="0" step="1" value={neuBaujahr} onChange={(e) => setNeuBaujahr(e.target.value)} placeholder="z. B. 2011" /></label>
+
+            <div className="field">
+              <span>Unterlagen (optional)</span>
+              <label
+                className={"dropzone" + (neuDropAktiv ? " active" : "")}
+                onDragOver={(e) => { e.preventDefault(); setNeuDropAktiv(true); }}
+                onDragLeave={() => setNeuDropAktiv(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setNeuDropAktiv(false);
+                  if (e.dataTransfer.files?.length) neuDateienHinzufuegen(e.dataTransfer.files);
+                }}
+              >
+                <Ico.folder />
+                <span className="dropzone-text">Exposé, Grundriss oder weitere Dokumente hierher ziehen oder klicken zum Auswählen</span>
+                <input
+                  type="file"
+                  multiple
+                  onChange={(e) => { if (e.target.files?.length) neuDateienHinzufuegen(e.target.files); e.target.value = ""; }}
+                  style={{ display: "none" }}
+                />
+              </label>
+              {neuDateien.length > 0 && (
+                <div className="dropzone-liste">
+                  {neuDateien.map((d, i) => (
+                    <div className="dropzone-datei" key={d.name + i}>
+                      <Ico.doc />
+                      <span>{d.name}</span>
+                      <button
+                        type="button" className="iconbtn sm" aria-label="Datei entfernen"
+                        onClick={() => setNeuDateien((liste) => liste.filter((_, idx) => idx !== i))}
+                      ><Ico.close /></button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="hint">Unterlagen werden im Prototyp nur angehängt. Automatische Auswertung per OCR folgt in einem späteren Schritt.</p>
+            </div>
+
             <div className="form-actions">
-              <button className="primary" onClick={() => setNeuesObjekt(false)}>Objekt anlegen</button>
-              <button className="ghost" onClick={() => setNeuesObjekt(false)}>Abbrechen</button>
+              <button className="primary" onClick={objektAnlegen} disabled={!objektAnlegenMoeglich}><Ico.plus /> Objekt anlegen</button>
+              <button className="ghost" onClick={neuSchliessen}>Abbrechen</button>
             </div>
           </div>
         </div>

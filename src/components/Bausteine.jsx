@@ -192,7 +192,7 @@ export function AnpassenSheet({ titel, hinweis, katalog, auswahl, setAuswahl, st
 
 /* Ist-Miete gegenüber Marktmiete */
 export function MietVergleich({ v }) {
-  const max = Math.max(v.ist, v.markt) * 1.12;
+  const max = Math.max(v.ist, v.markt, 1) * 1.12;
   return (
     <div className="verg">
       <div className="verg-row">
