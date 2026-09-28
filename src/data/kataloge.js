@@ -83,3 +83,4 @@ export const KONTAKT_TYPEN = [
   "Mieter", "Handwerker", "Hausmeister", "Bank", "Steuerberater",
   "Versicherung", "Gutachter", "Anwalt", "Verwaltungsbeirat", "Behörde", "Lieferant", "Sonstiges",
 ];
+export const KONTAKT_TYP_OPTIONEN = [...BETEILIGTE_ROLLEN, ...KONTAKT_TYPEN];

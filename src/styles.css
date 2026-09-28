@@ -279,6 +279,15 @@ button.primary:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:
 .beteiligter-row:last-child{border-bottom:none;}
 .kontakt-row{display:flex;gap:10px;align-items:center;}
 .kontakt-row select{flex:1;}
+.toggle-inline{display:flex;align-items:center;gap:12px;}
+.toggle-inline span{font-size:14.5px;font-weight:500;color:var(--text);}
+.field-divider{height:1px;background:var(--line);margin:4px 0 18px;}
+.rating{display:flex;gap:6px;}
+.star-btn{background:none;border:none;padding:3px;cursor:pointer;color:var(--line-strong);line-height:0;transition:color .2s var(--ease);}
+.star-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;}
+.star-btn.on{color:var(--gold);}
+.star-btn.on svg{fill:var(--gold);}
+.overlay.top{z-index:70;}
 .beteiligter-main{display:flex;flex-direction:column;gap:4px;min-width:0;}
 .beteiligter-name{font-size:15px;font-weight:500;}
 .beteiligter-meta{font-size:12.5px;color:var(--muted);}

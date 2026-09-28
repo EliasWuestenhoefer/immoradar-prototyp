@@ -21,5 +21,6 @@ export const Ico = {
   trash: (p) => (<svg viewBox="0 0 24 24" fill="none" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M5 7h14" /><path d="M9.5 7V5.2A1.2 1.2 0 0 1 10.7 4h2.6a1.2 1.2 0 0 1 1.2 1.2V7" /><path d="M7 7l.8 12a1.5 1.5 0 0 0 1.5 1.4h5.4a1.5 1.5 0 0 0 1.5-1.4L17 7" /><path d="M10.3 11v6M13.7 11v6" /></svg>),
   grip: (p) => (<svg viewBox="0 0 24 24" fill="currentColor" {...p}><circle cx="9" cy="6" r="1.4" /><circle cx="15" cy="6" r="1.4" /><circle cx="9" cy="12" r="1.4" /><circle cx="15" cy="12" r="1.4" /><circle cx="9" cy="18" r="1.4" /><circle cx="15" cy="18" r="1.4" /></svg>),
   people: (p) => (<svg viewBox="0 0 24 24" fill="none" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="8.5" cy="8" r="3" /><path d="M2.8 19c.7-3.4 3-5.3 5.7-5.3S13.5 15.6 14.2 19" /><circle cx="16.3" cy="8.6" r="2.4" /><path d="M14.8 13.9c2.4.4 4 2 4.6 4.6" /></svg>),
+  star: (p) => (<svg viewBox="0 0 24 24" strokeWidth="1.4" strokeLinejoin="round" {...p}><path d="M12 4.2l2.24 4.54 5.01.73-3.63 3.54.86 4.99L12 15.6l-4.48 2.4.86-4.99-3.63-3.54 5.01-.73z" /></svg>),
 };
 export const SECTION_ICON = { finanzen: Ico.finanzen, mieter: Ico.mieter, technik: Ico.technik, organisatorisches: Ico.orga };

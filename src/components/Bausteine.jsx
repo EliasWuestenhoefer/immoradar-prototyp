@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Ico, SECTION_ICON } from "./Icons.jsx";
-import { SEKTIONEN, BETEILIGTE_ROLLEN, KONTAKT_TYPEN } from "../data/kataloge.js";
+import { SEKTIONEN, KONTAKT_TYP_OPTIONEN } from "../data/kataloge.js";
 import { eur } from "../utils/format.js";
 
 export function KpiCard({ label, value, note, onClick, badge, control, draggable, onDragStart, onDragOver, onDrop, onDragEnd, dragging, dragOver }) {
@@ -307,7 +307,13 @@ export function VermoegenChart({ data }) {
 }
 
 /* Beteiligte je Objekt */
-export function BeteiligtePanel({ liste, onAdd, onRemove }) {
+function kontaktName(k) {
+  if (!k) return "";
+  if (k.art === "firma") return k.firmenname || "Unbenannte Firma";
+  return [k.vorname, k.nachname].filter(Boolean).join(" ") || k.firma || "Unbenannter Kontakt";
+}
+
+export function BeteiligtePanel({ liste, kontakte, onAdd, onRemove, onCreateKontakt }) {
   const [sheetOffen, setSheetOffen] = useState(false);
 
   return (
@@ -324,40 +330,48 @@ export function BeteiligtePanel({ liste, onAdd, onRemove }) {
         </div>
       ) : (
         <div className="list">
-          {liste.map((b) => (
-            <div className="beteiligter-row" key={b.id}>
-              <div className="beteiligter-main">
-                <span className="beteiligter-name">
-                  {b.rolle}
-                  {b.hauptansprechpartner && <span className="premium" style={{ marginLeft: 8 }}>Hauptansprechpartner</span>}
-                </span>
-                <span className="beteiligter-meta">
-                  {(b.gueltigAb || b.gueltigBis) ? `gültig ${b.gueltigAb || "…"} – ${b.gueltigBis || "…"}` : ""}
-                  {b.hinweis ? `${(b.gueltigAb || b.gueltigBis) ? " · " : ""}${b.hinweis}` : ""}
-                </span>
+          {liste.map((b) => {
+            const kontakt = kontakte.find((k) => k.id === b.kontaktId);
+            return (
+              <div className="beteiligter-row" key={b.id}>
+                <div className="beteiligter-main">
+                  <span className="beteiligter-name">
+                    {kontakt ? kontaktName(kontakt) : "Unbekannter Kontakt"}
+                    {b.hauptansprechpartner && <span className="premium" style={{ marginLeft: 8 }}>Hauptansprechpartner</span>}
+                  </span>
+                  <span className="beteiligter-meta">
+                    {b.rolle}
+                    {(b.gueltigAb || b.gueltigBis) ? ` · gültig ${b.gueltigAb || "…"} – ${b.gueltigBis || "…"}` : ""}
+                    {b.hinweis ? ` · ${b.hinweis}` : ""}
+                  </span>
+                </div>
+                <button className="iconbtn sm" onClick={() => onRemove(b.id)} aria-label="Beteiligten entfernen"><Ico.trash /></button>
               </div>
-              <button className="iconbtn sm" onClick={() => onRemove(b.id)} aria-label="Beteiligten entfernen"><Ico.trash /></button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
       {sheetOffen && (
-        <BeteiligtenSheet onClose={() => setSheetOffen(false)} onSave={(b) => { onAdd(b); setSheetOffen(false); }} />
+        <BeteiligtenSheet
+          kontakte={kontakte}
+          onCreateKontakt={onCreateKontakt}
+          onClose={() => setSheetOffen(false)}
+          onSave={(b) => { onAdd(b); setSheetOffen(false); }}
+        />
       )}
     </Panel>
   );
 }
 
-const BETEILIGTE_ROLLEN_ALLE = [...BETEILIGTE_ROLLEN, ...KONTAKT_TYPEN];
-
-function BeteiligtenSheet({ onClose, onSave }) {
+function BeteiligtenSheet({ kontakte, onCreateKontakt, onClose, onSave }) {
   const [kontaktId, setKontaktId] = useState("");
-  const [rolle, setRolle] = useState(BETEILIGTE_ROLLEN_ALLE[0]);
+  const [rolle, setRolle] = useState(KONTAKT_TYP_OPTIONEN[0]);
   const [hinweis, setHinweis] = useState("");
   const [gueltigAb, setGueltigAb] = useState("");
   const [gueltigBis, setGueltigBis] = useState("");
   const [hauptansprechpartner, setHauptansprechpartner] = useState(false);
+  const [kontaktErstellenOffen, setKontaktErstellenOffen] = useState(false);
 
   const speichernMoeglich = !!kontaktId;
 
@@ -374,6 +388,12 @@ function BeteiligtenSheet({ onClose, onSave }) {
     });
   };
 
+  const kontaktErstellt = (kontakt) => {
+    onCreateKontakt(kontakt);
+    setKontaktId(kontakt.id);
+    setKontaktErstellenOffen(false);
+  };
+
   return (
     <div className="overlay" onClick={onClose}>
       <div className="sheet" onClick={(e) => e.stopPropagation()}>
@@ -386,9 +406,10 @@ function BeteiligtenSheet({ onClose, onSave }) {
           <span>Kontakt *</span>
           <div className="kontakt-row">
             <select value={kontaktId} onChange={(e) => setKontaktId(e.target.value)}>
-              <option value="">Noch kein Kontakt hinzugefügt</option>
+              <option value="">{kontakte.length === 0 ? "Noch kein Kontakt hinzugefügt" : "Bitte wählen"}</option>
+              {kontakte.map((k) => <option key={k.id} value={k.id}>{kontaktName(k)}</option>)}
             </select>
-            <button type="button" className="iconbtn" onClick={() => {}} aria-label="Kontakt anlegen" title="Kontakt anlegen">
+            <button type="button" className="iconbtn" onClick={() => setKontaktErstellenOffen(true)} aria-label="Kontakt anlegen" title="Kontakt anlegen">
               <Ico.plus />
             </button>
           </div>
@@ -397,7 +418,7 @@ function BeteiligtenSheet({ onClose, onSave }) {
         <label className="field">
           <span>Rolle *</span>
           <select value={rolle} onChange={(e) => setRolle(e.target.value)}>
-            {BETEILIGTE_ROLLEN_ALLE.map((r) => <option key={r} value={r}>{r}</option>)}
+            {KONTAKT_TYP_OPTIONEN.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
         </label>
 
@@ -431,6 +452,241 @@ function BeteiligtenSheet({ onClose, onSave }) {
 
         <div className="form-actions">
           <button className="primary" onClick={speichern} disabled={!speichernMoeglich}>Speichern</button>
+          <button className="ghost" onClick={onClose}>Abbrechen</button>
+        </div>
+      </div>
+
+      {kontaktErstellenOffen && (
+        <KontaktErstellenSheet onClose={() => setKontaktErstellenOffen(false)} onCreate={kontaktErstellt} />
+      )}
+    </div>
+  );
+}
+
+function KontaktErstellenSheet({ onClose, onCreate }) {
+  const [art, setArt] = useState("person");
+  const [vorname, setVorname] = useState("");
+  const [nachname, setNachname] = useState("");
+  const [firma, setFirma] = useState("");
+  const [position, setPosition] = useState("");
+  const [firmenname, setFirmenname] = useState("");
+  const [typ, setTyp] = useState(KONTAKT_TYP_OPTIONEN[0]);
+  const [email, setEmail] = useState("");
+  const [telefon, setTelefon] = useState("");
+  const [telefon2, setTelefon2] = useState("");
+  const [mobil, setMobil] = useState("");
+  const [fax, setFax] = useState("");
+  const [website, setWebsite] = useState("");
+  const [strasse, setStrasse] = useState("");
+  const [hausnummer, setHausnummer] = useState("");
+  const [adresszusatz, setAdresszusatz] = useState("");
+  const [plz, setPlz] = useState("");
+  const [stadt, setStadt] = useState("");
+  const [land, setLand] = useState("");
+  const [stundensatz, setStundensatz] = useState("");
+  const [konditionen, setKonditionen] = useState("");
+  const [bewertung, setBewertung] = useState(0);
+  const [nichtKontaktieren, setNichtKontaktieren] = useState(false);
+  const [notizen, setNotizen] = useState("");
+
+  const istFirma = art === "firma";
+  const speichernMoeglich = istFirma ? firmenname.trim().length > 0 : nachname.trim().length > 0;
+
+  const speichern = () => {
+    if (!speichernMoeglich) return;
+    onCreate({
+      id: Date.now().toString(36),
+      art,
+      vorname: vorname.trim(),
+      nachname: nachname.trim(),
+      firma: firma.trim(),
+      position: position.trim(),
+      firmenname: firmenname.trim(),
+      typ,
+      email: email.trim(),
+      telefon: telefon.trim(),
+      telefon2: telefon2.trim(),
+      mobil: mobil.trim(),
+      fax: fax.trim(),
+      website: website.trim(),
+      strasse: strasse.trim(),
+      hausnummer: hausnummer.trim(),
+      adresszusatz: adresszusatz.trim(),
+      plz: plz.trim(),
+      stadt: stadt.trim(),
+      land: land.trim(),
+      stundensatz,
+      konditionen: konditionen.trim(),
+      bewertung,
+      nichtKontaktieren,
+      notizen: notizen.trim(),
+    });
+  };
+
+  return (
+    <div className="overlay top" onClick={onClose}>
+      <div className="sheet wide" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-head">
+          <h3>Kontakt erstellen</h3>
+          <button className="iconbtn sm" onClick={onClose} aria-label="Schließen"><Ico.close /></button>
+        </div>
+
+        <div className="field">
+          <span>Art</span>
+          <div className="toggle-inline">
+            <button
+              className={"switch" + (istFirma ? " on" : "")}
+              onClick={() => setArt(istFirma ? "person" : "firma")}
+              aria-label="Art umschalten"
+            ><span /></button>
+            <span>{istFirma ? "Firma" : "Person"}</span>
+          </div>
+        </div>
+
+        {istFirma ? (
+          <label className="field">
+            <span>Firmenname *</span>
+            <input value={firmenname} onChange={(e) => setFirmenname(e.target.value)} placeholder="Firma GmbH" />
+          </label>
+        ) : (
+          <>
+            <div className="two-col">
+              <label className="field">
+                <span>Vorname</span>
+                <input value={vorname} onChange={(e) => setVorname(e.target.value)} />
+              </label>
+              <label className="field">
+                <span>Nachname *</span>
+                <input value={nachname} onChange={(e) => setNachname(e.target.value)} />
+              </label>
+            </div>
+            <div className="two-col">
+              <label className="field">
+                <span>Firma</span>
+                <input value={firma} onChange={(e) => setFirma(e.target.value)} />
+              </label>
+              <label className="field">
+                <span>Position</span>
+                <input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="z. B. Geschäftsführende Gesellschafterin" />
+              </label>
+            </div>
+          </>
+        )}
+
+        <label className="field">
+          <span>Typ *</span>
+          <select value={typ} onChange={(e) => setTyp(e.target.value)}>
+            {KONTAKT_TYP_OPTIONEN.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </label>
+
+        <div className="field-divider" />
+
+        <div className="two-col">
+          <label className="field">
+            <span>E-Mail</span>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="max.mustermann@example.com" />
+          </label>
+          <label className="field">
+            <span>Telefon</span>
+            <input value={telefon} onChange={(e) => setTelefon(e.target.value)} placeholder="+49123456789" />
+          </label>
+        </div>
+        <div className="two-col">
+          <label className="field">
+            <span>Telefon (2)</span>
+            <input value={telefon2} onChange={(e) => setTelefon2(e.target.value)} />
+          </label>
+          <label className="field">
+            <span>Mobil</span>
+            <input value={mobil} onChange={(e) => setMobil(e.target.value)} />
+          </label>
+        </div>
+        <div className="two-col">
+          <label className="field">
+            <span>Fax</span>
+            <input value={fax} onChange={(e) => setFax(e.target.value)} />
+          </label>
+          <label className="field">
+            <span>Website</span>
+            <input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://" />
+          </label>
+        </div>
+        <div className="two-col">
+          <label className="field">
+            <span>Straße</span>
+            <input value={strasse} onChange={(e) => setStrasse(e.target.value)} />
+          </label>
+          <label className="field">
+            <span>Hausnummer</span>
+            <input value={hausnummer} onChange={(e) => setHausnummer(e.target.value)} />
+          </label>
+        </div>
+        <div className="two-col">
+          <label className="field">
+            <span>Adresszusatz</span>
+            <input value={adresszusatz} onChange={(e) => setAdresszusatz(e.target.value)} />
+          </label>
+          <label className="field">
+            <span>PLZ</span>
+            <input value={plz} onChange={(e) => setPlz(e.target.value)} />
+          </label>
+        </div>
+        <div className="two-col">
+          <label className="field">
+            <span>Stadt</span>
+            <input value={stadt} onChange={(e) => setStadt(e.target.value)} />
+          </label>
+          <label className="field">
+            <span>Land</span>
+            <input value={land} onChange={(e) => setLand(e.target.value)} />
+          </label>
+        </div>
+        <div className="two-col">
+          <label className="field">
+            <span>Stundensatz</span>
+            <input type="number" min="0" step="1" value={stundensatz} onChange={(e) => setStundensatz(e.target.value)} placeholder="z. B. 68" />
+          </label>
+          <label className="field">
+            <span>Konditionen</span>
+            <input value={konditionen} onChange={(e) => setKonditionen(e.target.value)} placeholder="z. B. netto, zzgl. 45 € Anfahrt" />
+          </label>
+        </div>
+
+        <div className="field">
+          <span>Bewertung</span>
+          <div className="rating">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                className={"star-btn" + (n <= bewertung ? " on" : "")}
+                onClick={() => setBewertung(n === bewertung ? 0 : n)}
+                aria-label={`${n} Sterne`}
+              ><Ico.star /></button>
+            ))}
+          </div>
+        </div>
+
+        <div className="hauptansprech-row">
+          <div>
+            <div className="hauptansprech-title">Nicht kontaktieren</div>
+            <div className="hauptansprech-note">Dieser Kontakt wird von Immoradar nicht angeschrieben</div>
+          </div>
+          <button
+            className={"switch" + (nichtKontaktieren ? " on" : "")}
+            onClick={() => setNichtKontaktieren(!nichtKontaktieren)}
+            aria-label="Nicht kontaktieren umschalten"
+          ><span /></button>
+        </div>
+
+        <label className="field">
+          <span>Notizen</span>
+          <textarea rows={3} value={notizen} onChange={(e) => setNotizen(e.target.value)} placeholder="Notizen" />
+        </label>
+
+        <div className="form-actions">
+          <button className="primary" onClick={speichern} disabled={!speichernMoeglich}><Ico.plus /> Erstellen</button>
           <button className="ghost" onClick={onClose}>Abbrechen</button>
         </div>
       </div>

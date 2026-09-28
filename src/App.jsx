@@ -36,6 +36,7 @@ export default function ImmoradarPrototype({ onLogout, userEmail, userName }) {
   const [verkaufsnebenkosten, setVerkaufsnebenkosten] = useState("");
   const [verkaufsHistorie, setVerkaufsHistorie] = useState([]);
   const [beteiligte, setBeteiligte] = useState({}); // je Objekt-ID: Array von Beteiligten
+  const [kontakte, setKontakte] = useState([]); // kontoweite Kontaktliste
   const [kpiDrag, setKpiDrag] = useState(null); // { key, idx }
   const [kpiOver, setKpiOver] = useState(null); // { key, idx }
 
@@ -129,6 +130,7 @@ export default function ImmoradarPrototype({ onLogout, userEmail, userName }) {
   const beteiligtenEntfernen = (objektIdFuer, beteiligterId) => {
     setBeteiligte({ ...beteiligte, [objektIdFuer]: beteiligteFuer(objektIdFuer).filter((b) => b.id !== beteiligterId) });
   };
+  const kontaktErstellen = (kontakt) => setKontakte((bisherige) => [...bisherige, kontakt]);
 
   const cfVorSteuernNum = objekteListe.reduce((sum, o) => sum + parseEur(o.fin.cfm.value), 0);
   const cfNachSteuernNum = objekteListe.reduce(
@@ -213,6 +215,11 @@ export default function ImmoradarPrototype({ onLogout, userEmail, userName }) {
   };
 
   const vorname = userName ? userName.trim().split(" ")[0] : null;
+  const profilName = userName || userEmail || "Mein Konto";
+  const profilInitialen = userName
+    ? userName.trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase()
+    : (userEmail ? userEmail[0].toUpperCase() : "?");
+  const profilMeta = [userName, userEmail].filter(Boolean).join(" · ");
 
   const titel = knoten ? knotenTitel()
     : objekt ? objekt.name
@@ -435,8 +442,10 @@ export default function ImmoradarPrototype({ onLogout, userEmail, userName }) {
                   </div>
                   <BeteiligtePanel
                     liste={beteiligteFuer(objekt.id)}
+                    kontakte={kontakte}
                     onAdd={(b) => beteiligtenHinzufuegen(objekt.id, b)}
                     onRemove={(id) => beteiligtenEntfernen(objekt.id, id)}
+                    onCreateKontakt={kontaktErstellen}
                   />
                   <Panel title="Steuersatz" sub="Wird für den Cashflow nach Steuern im Dashboard verwendet">
                     <label className="field inline">
@@ -752,9 +761,9 @@ export default function ImmoradarPrototype({ onLogout, userEmail, userName }) {
           {tab === "settings" && !setting && (
             <>
               <div className="profile-card">
-                <div className="avatar">AW</div>
+                <div className="avatar">{profilInitialen}</div>
                 <div>
-                  <div className="profile-name">Alex Weippert</div>
+                  <div className="profile-name">{profilName}</div>
                   <div className="profile-meta">Tarif Pro · 3 von 15 Objekten belegt</div>
                 </div>
                 <button className="ghost" onClick={() => setSettingsId("s-abo")}>Tarif verwalten</button>
@@ -762,7 +771,9 @@ export default function ImmoradarPrototype({ onLogout, userEmail, userName }) {
               {EINSTELLUNGEN.map((g) => (
                 <Panel key={g.gruppe} title={g.gruppe}>
                   <div className="list">
-                    {g.items.map((s) => <ListRow key={s.id} title={s.title} meta={s.meta} onClick={() => setSettingsId(s.id)} />)}
+                    {g.items.map((s) => (
+                      <ListRow key={s.id} title={s.title} meta={s.id === "s-profil" && profilMeta ? profilMeta : s.meta} onClick={() => setSettingsId(s.id)} />
+                    ))}
                   </div>
                 </Panel>
               ))}
@@ -771,9 +782,18 @@ export default function ImmoradarPrototype({ onLogout, userEmail, userName }) {
 
           {tab === "settings" && setting && (
             <>
-              <Panel title={setting.title} sub={setting.meta}><p className="prose">{setting.body}</p></Panel>
+              <Panel
+                title={setting.title}
+                sub={setting.id === "s-profil" && profilMeta ? profilMeta : setting.meta}
+              ><p className="prose">{setting.body}</p></Panel>
               <Panel title="Übersicht">
-                {setting.rows && <DataRows rows={setting.rows} />}
+                {setting.rows && (
+                  <DataRows
+                    rows={setting.id === "s-profil"
+                      ? setting.rows.map(([k, v]) => k === "Name" ? [k, userName || v] : k === "E-Mail" ? [k, userEmail || v] : [k, v])
+                      : setting.rows}
+                  />
+                )}
                 {setting.toggles && (
                   <div className="rows">
                     {setting.toggles.map(([k, on]) => (
