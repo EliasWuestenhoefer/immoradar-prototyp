@@ -296,6 +296,10 @@ button.primary:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:
 .dropzone-datei{display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--line);border-radius:var(--r-sm);font-size:13.5px;}
 .dropzone-datei svg{width:16px;height:16px;stroke:var(--muted);flex:none;}
 .dropzone-datei span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.hinweis-banner{display:flex;align-items:center;justify-content:space-between;gap:20px;background:var(--gold-tint);border:1px solid var(--gold);border-radius:var(--r-lg);padding:18px 22px;margin:18px 0;}
+.hinweis-banner strong{font-size:15px;}
+.hinweis-banner p{font-size:13.5px;color:var(--muted);margin-top:4px;max-width:62ch;line-height:1.5;}
+.hinweis-banner button{flex:none;}
 .beteiligter-main{display:flex;flex-direction:column;gap:4px;min-width:0;}
 .beteiligter-name{font-size:15px;font-weight:500;}
 .beteiligter-meta{font-size:12.5px;color:var(--muted);}

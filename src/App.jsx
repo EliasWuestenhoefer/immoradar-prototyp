@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { eur, parseEur } from "./utils/format.js";
-import { OBJEKTE, OBJEKTTYPEN, erstelleObjekt } from "./data/objekte.js";
+import { OBJEKTE, OBJEKTTYPEN, erstelleObjekt, aktualisiereStammdaten } from "./data/objekte.js";
 import {
   DASH_KATALOG, DASH_DEFAULT, FIN_KATALOG, FIN_DEFAULT,
   MIET_KATALOG, MIET_DEFAULT, TECH_KATALOG, TECH_DEFAULT,
@@ -12,6 +12,7 @@ import { ObjektBild } from "./components/ObjektBild.jsx";
 import {
   KpiCard, DataRows, Panel, ListRow, Segmented, ObjektTabs,
   AnpassenButton, AnpassenSheet, MietVergleich, DokumentAnsicht, EnergieAusweis, VermoegenChart, BeteiligtePanel,
+  ObjektdatenPanel, UnterlagenPanel,
 } from "./components/Bausteine.jsx";
 
 export default function ImmoradarPrototype({ onLogout, userEmail, userName }) {
@@ -141,6 +142,19 @@ export default function ImmoradarPrototype({ onLogout, userEmail, userName }) {
     setNeuesObjekt(false);
     openObjekt(id);
   };
+
+  // Objektdaten nachträglich ergänzen (unvollständige Objekte) und Unterlagen verwalten
+  const vollstaendig = (o) => o.vollstaendig !== false;
+  const objektAktualisieren = (id, patch) => setObjekteListe((liste) => liste.map((o) => (o.id === id ? patch(o) : o)));
+  const stammdatenSpeichern = (o, felder) => objektAktualisieren(o.id, (obj) => aktualisiereStammdaten(obj, felder));
+  const dateiHinzufuegen = (o, fileList) => {
+    const neue = Array.from(fileList).map((f) => ({ name: f.name, groesse: f.size }));
+    objektAktualisieren(o.id, (obj) => ({ ...obj, dateien: [...(obj.dateien || []), ...neue] }));
+  };
+  const dateiEntfernen = (o, idx) => objektAktualisieren(o.id, (obj) => ({
+    ...obj,
+    dateien: (obj.dateien || []).filter((_, i) => i !== idx),
+  }));
 
   // Drag & Drop für Kennzahlen-Kacheln (Dashboard, Finanzen, Mieter, Technik)
   const kpiListen = { dash: [dashKpis, setDashKpis], fin: [finKpis, setFinKpis], miet: [mietKpis, setMietKpis], tech: [techKpis, setTechKpis] };
@@ -371,6 +385,16 @@ export default function ImmoradarPrototype({ onLogout, userEmail, userName }) {
                 </div>
               </div>
 
+              {!vollstaendig(objekt) && (
+                <div className="hinweis-banner">
+                  <div>
+                    <strong>Noch nichts erfasst</strong>
+                    <p>Für „{objekt.name}“ fehlen noch Kaufdaten oder Unterlagen. Jetzt ergänzen, damit Finanzen, Mieter und Technik befüllt sind.</p>
+                  </div>
+                  <button className="primary" onClick={() => wechsleSektion("organisatorisches")}>Jetzt ergänzen</button>
+                </div>
+              )}
+
               <ObjektTabs value={sektion} onChange={wechsleSektion} />
 
               {/* -------- Finanzen -------- */}
@@ -484,6 +508,14 @@ export default function ImmoradarPrototype({ onLogout, userEmail, userName }) {
                       <p>Beteiligte, Steuersatz und Objektverwaltung</p>
                     </div>
                   </div>
+                  {!vollstaendig(objekt) && (
+                    <ObjektdatenPanel objekt={objekt} onSave={(felder) => stammdatenSpeichern(objekt, felder)} />
+                  )}
+                  <UnterlagenPanel
+                    dateien={objekt.dateien || []}
+                    onAdd={(fileList) => dateiHinzufuegen(objekt, fileList)}
+                    onRemove={(idx) => dateiEntfernen(objekt, idx)}
+                  />
                   <BeteiligtePanel
                     liste={beteiligteFuer(objekt.id)}
                     kontakte={kontakte}

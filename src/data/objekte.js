@@ -6,18 +6,20 @@ function kaufdatumText(d) {
   return y && m && tag ? `${tag}.${m}.${y}` : d;
 }
 
-// Erzeugt ein neu angelegtes Objekt mit sicheren Platzhaltern für alle
-// Kennzahlen, die noch nicht manuell erfasst oder per Dokument importiert wurden.
-// Ohne diese Platzhalter würden Finanzen-/Mieter-/Technik-Ansichten und die
-// Dashboard-Summen (die über alle Objekte iterieren) auf fehlende Felder crashen.
-export function erstelleObjekt({ id, name, street, type, kaufpreis, kaufdatum, flaeche, einheiten, baujahr, dateien }) {
+const platzhalter = (note = "Noch keine Angabe") => ({ value: "–", note });
+
+// Berechnet aus den Basisangaben (Kaufpreis, Fläche, Einheiten, Baujahr) die
+// abgeleiteten Anzeigefelder. Wird sowohl beim Anlegen als auch beim
+// nachträglichen Ergänzen eines Objekts verwendet, damit beide Wege exakt
+// dieselben Platzhalter-Konventionen erzeugen.
+function stammfelderBerechnen({ kaufpreis, kaufdatum, flaeche, einheiten, baujahr }) {
   const flaecheNum = Number(flaeche) || 0;
   const einheitenNum = Number(einheiten) || 0;
   const kaufpreisNum = Number(kaufpreis) || 0;
   const kaufpreisText = kaufpreisNum ? eur(kaufpreisNum) : "–";
   const baujahrText = baujahr ? String(baujahr) : "–";
   const flaecheText = flaecheNum ? flaecheNum.toLocaleString("de-DE") + " m²" : "–";
-  const platzhalter = (note = "Noch keine Angabe") => ({ value: "–", note });
+  const einheitenNote = einheitenNum ? einheitenNum + (einheitenNum === 1 ? " Einheit" : " Einheiten") : "Noch keine Angabe";
 
   const subTeile = [
     einheitenNum ? einheitenNum + (einheitenNum === 1 ? " Wohneinheit" : " Wohneinheiten") : null,
@@ -26,17 +28,46 @@ export function erstelleObjekt({ id, name, street, type, kaufpreis, kaufdatum, f
   ].filter(Boolean);
 
   return {
+    flaecheNum,
+    sub: subTeile.length ? subTeile.join(" · ") : "Noch keine Angaben erfasst",
+    fin: {
+      ankaufskosten: { value: kaufpreisText, note: kaufdatum ? "Kaufdatum " + kaufdatumText(kaufdatum) : "Noch keine Angabe" },
+      marktwert: { value: kaufpreisText, note: "Entspricht dem Kaufpreis, noch keine Bewertung hinterlegt" },
+    },
+    miet: {
+      flaeche: { value: flaecheText, note: einheitenNote },
+      einheiten: { value: einheitenNum ? "0 / " + einheitenNum : "–", note: "vermietet / gesamt" },
+    },
+    tech: {
+      baujahr: { value: baujahrText, note: "Noch keine weitere Angabe" },
+      wohnflaeche: { value: flaecheText, note: einheitenNote },
+    },
+  };
+}
+
+const hatStammdaten = ({ kaufpreis, flaeche, einheiten, baujahr, dateien }) =>
+  Boolean(Number(kaufpreis) || Number(flaeche) || Number(einheiten) || baujahr || (dateien && dateien.length));
+
+// Erzeugt ein neu angelegtes Objekt mit sicheren Platzhaltern für alle
+// Kennzahlen, die noch nicht manuell erfasst oder per Dokument importiert wurden.
+// Ohne diese Platzhalter würden Finanzen-/Mieter-/Technik-Ansichten und die
+// Dashboard-Summen (die über alle Objekte iterieren) auf fehlende Felder crashen.
+export function erstelleObjekt({ id, name, street, type, kaufpreis, kaufdatum, flaeche, einheiten, baujahr, dateien }) {
+  const felder = stammfelderBerechnen({ kaufpreis, kaufdatum, flaeche, einheiten, baujahr });
+
+  return {
     id,
     name,
     street,
     type,
-    sub: subTeile.length ? subTeile.join(" · ") : "Noch keine Angaben erfasst",
-    flaecheNum,
+    sub: felder.sub,
+    flaecheNum: felder.flaecheNum,
     jnkmNum: 0,
     dateien: dateien || [],
+    vollstaendig: hatStammdaten({ kaufpreis, flaeche, einheiten, baujahr, dateien }),
+    stammdaten: { kaufpreis: kaufpreis || "", kaufdatum: kaufdatum || "", flaeche: flaeche || "", einheiten: einheiten || "", baujahr: baujahr || "" },
     fin: {
-      ankaufskosten: { value: kaufpreisText, note: kaufdatum ? "Kaufdatum " + kaufdatumText(kaufdatum) : "Noch keine Angabe" },
-      marktwert: { value: kaufpreisText, note: "Entspricht dem Kaufpreis, noch keine Bewertung hinterlegt" },
+      ...felder.fin,
       eigenkapital: platzhalter(),
       restschuld: platzhalter(),
       ltv: platzhalter(),
@@ -62,16 +93,14 @@ export function erstelleObjekt({ id, name, street, type, kaufpreis, kaufdatum, f
       wault: platzhalter(),
       leerstand: { value: "–", note: "Noch keine Mietverhältnisse erfasst" },
       mieteqm: platzhalter(),
-      flaeche: { value: flaecheText, note: einheitenNum ? einheitenNum + (einheitenNum === 1 ? " Einheit" : " Einheiten") : "Noch keine Angabe" },
+      ...felder.miet,
       potenzial: platzhalter(),
-      einheiten: { value: einheitenNum ? "0 / " + einheitenNum : "–", note: "vermietet / gesamt" },
       vergleich: { ist: 0, markt: 0, delta: "–" },
       leerstandDetail: { rows: [], note: "Noch keine Mietverhältnisse erfasst." },
       mieter: [],
     },
     tech: {
-      baujahr: { value: baujahrText, note: "Noch keine weitere Angabe" },
-      wohnflaeche: { value: flaecheText, note: einheitenNum ? einheitenNum + (einheitenNum === 1 ? " Einheit" : " Einheiten") : "Noch keine Angabe" },
+      ...felder.tech,
       grundstueck: platzhalter(),
       sanierung: platzhalter(),
       heizung: platzhalter(),
@@ -83,6 +112,25 @@ export function erstelleObjekt({ id, name, street, type, kaufpreis, kaufdatum, f
       zustand: [],
       revision: [],
     },
+  };
+}
+
+// Ergänzt die Basisangaben eines bereits bestehenden Objekts nachträglich
+// (z. B. über "Organisatorisches" bei einem noch unvollständigen Objekt).
+// Überschreibt bewusst nur die wenigen von erstelleObjekt gesetzten
+// Platzhalterfelder, nicht die übrigen (ggf. bereits real befüllten) Finanz-,
+// Mieter- oder Technikdaten des Objekts.
+export function aktualisiereStammdaten(objekt, { kaufpreis, kaufdatum, flaeche, einheiten, baujahr }) {
+  const felder = stammfelderBerechnen({ kaufpreis, kaufdatum, flaeche, einheiten, baujahr });
+  return {
+    ...objekt,
+    sub: felder.sub,
+    flaecheNum: felder.flaecheNum,
+    vollstaendig: true,
+    stammdaten: { kaufpreis: kaufpreis || "", kaufdatum: kaufdatum || "", flaeche: flaeche || "", einheiten: einheiten || "", baujahr: baujahr || "" },
+    fin: { ...objekt.fin, ...felder.fin },
+    miet: { ...objekt.miet, ...felder.miet },
+    tech: { ...objekt.tech, ...felder.tech },
   };
 }
 

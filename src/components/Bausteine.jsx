@@ -693,3 +693,68 @@ function KontaktErstellenSheet({ onClose, onCreate }) {
     </div>
   );
 }
+
+/* Fehlende Stammdaten eines neu angelegten, noch unvollständigen Objekts nachtragen */
+export function ObjektdatenPanel({ objekt, onSave }) {
+  const s = objekt.stammdaten || {};
+  const [kaufpreis, setKaufpreis] = useState(s.kaufpreis || "");
+  const [kaufdatum, setKaufdatum] = useState(s.kaufdatum || "");
+  const [flaeche, setFlaeche] = useState(s.flaeche || "");
+  const [einheiten, setEinheiten] = useState(s.einheiten || "");
+  const [baujahr, setBaujahr] = useState(s.baujahr || "");
+
+  return (
+    <Panel title="Objektdaten ergänzen" sub="Diese Angaben fehlen noch und werden für Finanzen, Mieter und Technik verwendet.">
+      <div className="two-col">
+        <label className="field"><span>Kaufpreis</span><input type="number" min="0" step="1000" value={kaufpreis} onChange={(e) => setKaufpreis(e.target.value)} placeholder="z. B. 650000" /></label>
+        <label className="field"><span>Kaufdatum</span><input type="date" value={kaufdatum} onChange={(e) => setKaufdatum(e.target.value)} /></label>
+      </div>
+      <div className="two-col">
+        <label className="field"><span>Wohn-/Nutzfläche (m²)</span><input type="number" min="0" step="1" value={flaeche} onChange={(e) => setFlaeche(e.target.value)} placeholder="z. B. 148" /></label>
+        <label className="field"><span>Anzahl Einheiten</span><input type="number" min="0" step="1" value={einheiten} onChange={(e) => setEinheiten(e.target.value)} placeholder="z. B. 1" /></label>
+      </div>
+      <label className="field inline"><span>Baujahr</span><input type="number" min="0" step="1" value={baujahr} onChange={(e) => setBaujahr(e.target.value)} placeholder="z. B. 2011" /></label>
+      <div className="form-actions">
+        <button className="primary" onClick={() => onSave({ kaufpreis, kaufdatum, flaeche, einheiten, baujahr })}>Speichern</button>
+      </div>
+    </Panel>
+  );
+}
+
+/* Objektbezogene Unterlagen – manuell oder per Drag & Drop, jederzeit ergänzbar */
+export function UnterlagenPanel({ dateien, onAdd, onRemove }) {
+  const [dropAktiv, setDropAktiv] = useState(false);
+
+  return (
+    <Panel title="Unterlagen" sub="Exposé, Grundriss, Kaufvertrag und weitere Dokumente zu diesem Objekt.">
+      <label
+        className={"dropzone" + (dropAktiv ? " active" : "")}
+        onDragOver={(e) => { e.preventDefault(); setDropAktiv(true); }}
+        onDragLeave={() => setDropAktiv(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDropAktiv(false);
+          if (e.dataTransfer.files?.length) onAdd(e.dataTransfer.files);
+        }}
+      >
+        <Ico.folder />
+        <span className="dropzone-text">Dokumente hierher ziehen oder klicken zum Auswählen</span>
+        <input
+          type="file" multiple style={{ display: "none" }}
+          onChange={(e) => { if (e.target.files?.length) onAdd(e.target.files); e.target.value = ""; }}
+        />
+      </label>
+      {dateien.length > 0 && (
+        <div className="dropzone-liste">
+          {dateien.map((d, i) => (
+            <div className="dropzone-datei" key={d.name + i}>
+              <Ico.doc />
+              <span>{d.name}</span>
+              <button type="button" className="iconbtn sm" aria-label="Datei entfernen" onClick={() => onRemove(i)}><Ico.close /></button>
+            </div>
+          ))}
+        </div>
+      )}
+    </Panel>
+  );
+}
